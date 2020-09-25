@@ -5,24 +5,22 @@ import re
 import sys
 
 
-
-#TODO:
-#Registering:
+# TODO:
+# Registering:
 #  User already exists
 #  Passwords don't match
-#Login:
+# Login:
 #  Basic impl.
 #  Password is incorrect
 #  User doesn't exist
-#Adding Contacts:
+# Adding Contacts:
 #  Basic impl.
 #  Contact already exists
 #
-#TODO SECURITY:
-#Password is insecure (not enough chars, etc)
-#Too many attempts -> lockout
-#Clean up data / encrypt data
-
+# TODO SECURITY:
+# Password is insecure (not enough chars, etc)
+# Too many attempts -> lockout
+# Clean up data / encrypt data
 
 
 def query_binary(question, default="yes"):
@@ -55,13 +53,15 @@ def query_binary(question, default="yes"):
             return valid[choice]
         else:
             print("Please respond with 'yes' or 'no' "
-                             "(or 'y' or 'n').")
+                  "(or 'y' or 'n').")
+
 
 def touch(fname):
     if os.path.exists(fname):
         os.utime(fname, None)
     else:
         open(fname, 'a').close()
+
 
 def getEmail():
     return "Email"
@@ -96,12 +96,14 @@ def getPassword():
 
     return password
 
+
 def dumpDataToTextFile(data):
     """
     data is a dict of dict
     """
     with open("data.txt", "w") as outfile:
         json.dump(data, outfile)
+
 
 def printDataFile():
     with open("data.txt") as json_file:
@@ -113,7 +115,7 @@ def printDataFile():
             print("Password: " + u["password"])
 
 
-def storeUserInfo(name,email,password):
+def storeUserInfo(name, email, password):
     """
     returns the dict of dict that constitutes the user info
     """
@@ -129,10 +131,12 @@ def storeUserInfo(name,email,password):
     data["users"].append(user_dict)
     return data
 
+
 def registerNewUser():
     print("Registering New User")
     dumpDataToTextFile(storeUserInfo(getName(), getEmail(), getPassword()))
     printDataFile()
+
 
 def main():
     touch("data.txt")
@@ -140,6 +144,7 @@ def main():
         print("No users are registered with this client.")
     if query_binary("Do you want to register a new user (y/n)? "):
         registerNewUser()
+
 
 if __name__ == "__main__":
     sys.exit(main())
