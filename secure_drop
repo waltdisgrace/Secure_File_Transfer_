@@ -11,12 +11,13 @@ import getpass
 
 # TODO:
 # Registering:
-#  User already exists - Grace working on it
+#  User already exists - DONE by Grace
 #  Passwords don't match - DONE by Billy
+#
 # Login:
 #  Basic impl. - DONE by Grace
-#  Password is incorrect
-#  User doesn't exist
+#  Password is incorrect - DONE by Grace
+#
 # Adding Contacts:
 #  Basic impl.
 #  Contact already exists
@@ -28,12 +29,13 @@ import getpass
 # Hash - DONE by Billy
 #
 # TODO BUGS:
-# Email conversion to string doesn't work -- DONE?
+# Email conversion to string doesn't work -- DONE by David
 # Checking Password - use hash
 # getPassword() 1x or 2x depending on login or register
 #
 # POSSIBLE TODO:
 # Asterisks for passwords (like PDF)
+# Login - distinguish between incorrect pwd, incorrect email?
 
 
 def query_binary(question, default="yes"):
@@ -172,9 +174,6 @@ def logIn():
     with open("data.txt") as json_file:
         data = json.load(json_file)
         for user in data["users"]:
-            print(user["email"])
-            print(user["password"])
-            print("PRINTING PASSWORD: " + password)
             if user["email"] == email and checkPassword(password, user["password"]):
                 #successful
                 print("Passwords Match.")
@@ -184,7 +183,7 @@ def logIn():
 
     #unsuccessful
     if not successful:
-        print("Incorrect Password. Try again.")
+        print("Incorrect Credentials. Try again.")
         logIn()
 
 # USER INFO
@@ -212,14 +211,29 @@ def registerNewUser():
     print("The user registration is a one-time process. Once a user is registered on a client, the"
           "login module is activated subsequently. After a successful login, a \"secure_drop>\" shell"
           "is started.")
+
     name = getName()
     email = str(getEmail())
-    if email in "data.txt":
-        print ("This user already exists.")
-        if query_binary("Do you want to log into your account? (y/n) "):
-            logIn()
-    dumpDataToTextFile(storeUserInfo(name, email, setPassword()))
-    printDataFile()
+    userExisted = False
+
+    #check password correctness by parsing data.txt
+    with open("data.txt") as json_file:
+        data = json.load(json_file)
+        for user in data["users"]:
+            if user["email"] == email:
+                print ("This user already exists.")
+                userExisted = True
+                if query_binary("Do you want to log into your account? (y/n) "):
+                    logIn()
+                break
+
+    if not userExisted:
+        password = setPassword()
+        dumpDataToTextFile(storeUserInfo(name, email, password))
+        printDataFile()
+    else:
+        print("Okay. Exiting now.")
+        exit(1)
 
 
 # MAIN
