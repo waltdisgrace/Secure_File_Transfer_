@@ -3,7 +3,7 @@
 import json
 import os
 import re
-#from email_validator import validate_email, EmailNotValidError
+from email_validator import validate_email, EmailNotValidError
 import sys
 import bcrypt
 import getpass
@@ -67,18 +67,20 @@ def touch(fname):
         open(fname, 'a').close()
 
 
+# CREDENTIALS
+
 def getEmail():
     return "Email"
-#    while True:
-#        try:
-#            email = input("Enter Email Address: ")
-#            valid = validate_email(email)
-#            email = valid.email
-#        except EmailNotValidError as e:
-#            print(str(e))
-#            continue
-#        else:
-#            break
+    while True:
+        try:
+            email = input("Enter Email Address: ")
+            valid = validate_email(email)
+            email = valid.email
+        except EmailNotValidError as e:
+            print(str(e))
+            continue
+        else:
+            break
 
 
 def getName():
@@ -88,9 +90,13 @@ def getName():
         name = input("Enter Full Name: ")
     return name
 
+
+# PASSWORD
+
 def passwordMeetsRequirements(password):
     reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
     return re.search(re.compile(reg), password)
+
 
 def getPassword():
     password = getpass.getpass()
@@ -98,18 +104,23 @@ def getPassword():
         print("""Password must be 6-20 characters long and requires at least one: 
     number, uppercase letter, lowercase letter, and special symbol. Try again.""")
         password = getpass.getpass()
-    
+
     password_copy = getpass.getpass("Re-enter Password: ")
     if password_copy != password:
         print("Passwords do not match. Try again.")
         password = getPassword()
     return password
 
+
 def getHashedPassword(password):
     return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12))
 
+
 def checkPassword(password, hashed_password):
     return bcrypt.checkpw(password.encode("utf8"), hashed_password)
+
+
+# DATA FILE
 
 def dumpDataToTextFile(data):
     """
@@ -128,6 +139,8 @@ def printDataFile():
             print("Email: " + u["email"])
             print("Password: " + u["password"])
 
+
+# USER INFO
 
 def storeUserInfo(name, email, password):
     """
@@ -152,13 +165,15 @@ def registerNewUser():
     printDataFile()
 
 
+# MAIN
+
 def main():
     touch("data.txt")
     if os.path.getsize("data.txt") == 0:
         print("No users are registered with this client.")
     if query_binary("Do you want to register a new user (y/n)? "):
         registerNewUser()
-        #print(checkPassword("pa$$w0Rd", getHashedPassword("pa$$w0Rd")))
+        # print(checkPassword("pa$$w0Rd", getHashedPassword("pa$$w0Rd")))
 
 
 if __name__ == "__main__":
