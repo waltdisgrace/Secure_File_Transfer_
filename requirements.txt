@@ -1,2 +1,2 @@
 bcrypt
-validate_email
+email_validator

@@ -11,10 +11,10 @@ import getpass
 
 # TODO:
 # Registering:
-#  User already exists
-#  Passwords don't match
+#  User already exists - Grace working on it
+#  Passwords don't match - DONE by Billy
 # Login:
-#  Basic impl.
+#  Basic impl. - DONE by Grace
 #  Password is incorrect
 #  User doesn't exist
 # Adding Contacts:
@@ -22,9 +22,18 @@ import getpass
 #  Contact already exists
 #
 # TODO SECURITY:
-# Password is insecure (not enough chars, etc)
+# Password is insecure (not enough chars, etc) - DONE by Billy
 # Too many attempts -> lockout
 # Clean up data / encrypt data
+# Hash - DONE by Billy
+#
+# TODO BUGS:
+# Email conversion to string doesn't work -- DONE?
+# Checking Password - use hash
+# getPassword() 1x or 2x depending on login or register
+#
+# POSSIBLE TODO:
+# Asterisks for passwords (like PDF)
 
 
 def query_binary(question, default="yes"):
@@ -91,13 +100,13 @@ def getName():
 
 
 # PASSWORD
+    
 
 def passwordMeetsRequirements(password):
     reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
     return re.search(re.compile(reg), password)
 
-
-def getPassword():
+def setPassword():
     password = getpass.getpass()
     while not passwordMeetsRequirements(password):
         print("""Password must be 6-20 characters long and requires at least one: 
@@ -107,7 +116,7 @@ def getPassword():
     password_copy = getpass.getpass("Re-enter Password: ")
     if password_copy != password:
         print("Passwords do not match. Try again.")
-        password = getPassword()
+        password = setPassword()
     return password
 
 
@@ -116,7 +125,17 @@ def getHashedPassword(password):
 
 
 def checkPassword(password, hashed_password):
-    return bcrypt.checkpw(password.encode("utf8"), hashed_password)
+    """
+    :param password: the string representation of the password in plain-text or None
+    :type password: str or None
+    :param hashed_password: the string representation of the hashed password
+    :type hashed_password: str
+    :returns: True if the password is correct or False if the password is incorrect
+    :rtype: bool
+    """
+    if password is None:
+        return False
+    return bcrypt.checkpw(password.encode("utf8"), hashed_password.encode("utf8"))
 
 
 # DATA FILE
@@ -138,12 +157,43 @@ def printDataFile():
             print("Email: " + u["email"])
             print("Password: " + u["password"])
 
+# LOG IN
+
+def getPassword():
+    password = getpass.getpass()
+    return password
+
+def logIn():
+    email = getEmail()
+    password = getPassword()
+    successful = False
+
+    #check password correctness by parsing data.txt
+    with open("data.txt") as json_file:
+        data = json.load(json_file)
+        for user in data["users"]:
+            print(user["email"])
+            print(user["password"])
+            print("PRINTING PASSWORD: " + password)
+            if user["email"] == email and checkPassword(password, user["password"]):
+                #successful
+                print("Passwords Match.")
+                print("Logging In.")
+                successful = True
+                #call function to enter shell TODO
+
+    #unsuccessful
+    if not successful:
+        print("Incorrect Password. Try again.")
+        logIn()
 
 # USER INFO
 
 def storeUserInfo(name, email, password):
     """
     returns the dict of dict that constitutes the user info
+    the outer dictionary maps the string "users" to a dictionary
+    the inner dictionary maps the strings "name", "email", and "password" to strings for all three of these
     """
     data = {}
     data["users"] = []
@@ -159,21 +209,36 @@ def storeUserInfo(name, email, password):
 
 
 def registerNewUser():
-    print("Registering New User")
-    dumpDataToTextFile(storeUserInfo(getName(), getEmail(), getPassword()))
+    print("The user registration is a one-time process. Once a user is registered on a client, the"
+          "login module is activated subsequently. After a successful login, a \"secure_drop>\" shell"
+          "is started.")
+    name = getName()
+    email = str(getEmail())
+    if email in "data.txt":
+        print ("This user already exists.")
+        if query_binary("Do you want to log into your account? (y/n) "):
+            logIn()
+    dumpDataToTextFile(storeUserInfo(name, email, setPassword()))
     printDataFile()
 
 
 # MAIN
 
 def main():
+
+    # data.txt is the file that contains user credientials
     touch("data.txt")
+
+    # if the file is empty, prompt user registration
     if os.path.getsize("data.txt") == 0:
         print("No users are registered with this client.")
+
     if query_binary("Do you want to register a new user (y/n)? "):
         registerNewUser()
-        # print(checkPassword("pa$$w0Rd", getHashedPassword("pa$$w0Rd")))
 
+    # prompt log in
+    if query_binary("Do you want to log in (y/n)? "):
+        logIn()
 
 if __name__ == "__main__":
     sys.exit(main())
