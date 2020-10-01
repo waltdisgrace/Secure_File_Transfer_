@@ -72,9 +72,9 @@ def touch(fname):
 def getEmail():
     while True:
         try:
-            email = input("Enter Email Address: ")
-            valid = validate_email(email)
-            return valid
+            email = str(input("Enter Email Address: "))
+            validate_email(email)
+            return email
         except EmailNotValidError as e:
             print(str(e))
             continue
