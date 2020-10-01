@@ -7,7 +7,7 @@ Team members: David Razmadze, Grace Chin, William Stewart
 ## Install requirements
 
 ```
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Overview
