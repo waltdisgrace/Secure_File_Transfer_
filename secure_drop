@@ -5,6 +5,8 @@ import os
 import re
 #from email_validator import validate_email, EmailNotValidError
 import sys
+import bcrypt
+import getpass
 
 
 # TODO:
@@ -81,23 +83,33 @@ def getEmail():
 
 def getName():
     name = input("Enter Full Name: ")
-    while name.isalpha() == False:
+    while not all(x.isalpha() or x.isspace() for x in name) or len(name) == 0:
         print("Invalid Name. Try again.")
         name = input("Enter Full Name: ")
     return name
 
+def passwordMeetsRequirements(password):
+    reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
+    return re.search(re.compile(reg), password)
 
 def getPassword():
-    password = input("Enter Password: ")
-    password_copy = input("Re-enter Password: ")
-
-    while password_copy != password:
+    password = getpass.getpass()
+    while not passwordMeetsRequirements(password):
+        print("""Password must be 6-20 characters long and requires at least one: 
+    number, uppercase letter, lowercase letter, and special symbol. Try again.""")
+        password = getpass.getpass()
+    
+    password_copy = getpass.getpass("Re-enter Password: ")
+    if password_copy != password:
         print("Passwords do not match. Try again.")
-        password = input("Enter Password: ")
-        password_copy = input("Re-enter Password: ")
-
+        password = getPassword()
     return password
 
+def getHashedPassword(password):
+    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12))
+
+def checkPassword(password, hashed_password):
+    return bcrypt.checkpw(password.encode("utf8"), hashed_password)
 
 def dumpDataToTextFile(data):
     """
@@ -128,7 +140,7 @@ def storeUserInfo(name, email, password):
 
     user_dict["name"] = name
     user_dict["email"] = email
-    user_dict["password"] = password
+    user_dict["password"] = getHashedPassword(password).decode("utf-8")
 
     data["users"].append(user_dict)
     return data
@@ -146,6 +158,7 @@ def main():
         print("No users are registered with this client.")
     if query_binary("Do you want to register a new user (y/n)? "):
         registerNewUser()
+        #print(checkPassword("pa$$w0Rd", getHashedPassword("pa$$w0Rd")))
 
 
 if __name__ == "__main__":
