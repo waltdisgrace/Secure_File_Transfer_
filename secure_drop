@@ -70,12 +70,11 @@ def touch(fname):
 # CREDENTIALS
 
 def getEmail():
-    return "Email"
     while True:
         try:
             email = input("Enter Email Address: ")
             valid = validate_email(email)
-            email = valid.email
+            return valid
         except EmailNotValidError as e:
             print(str(e))
             continue
