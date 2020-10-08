@@ -102,11 +102,12 @@ def getName():
 
 
 # PASSWORD
-    
+
 
 def passwordMeetsRequirements(password):
     reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
     return re.search(re.compile(reg), password)
+
 
 def setPassword():
     password = getpass.getpass()
@@ -161,32 +162,35 @@ def printDataFile():
 
 # LOG IN
 
+
 def getPassword():
     password = getpass.getpass()
     return password
+
 
 def logIn():
     email = getEmail()
     password = getPassword()
     successful = False
 
-    #check password correctness by parsing data.txt
+    # check password correctness by parsing data.txt
     with open("data.txt") as json_file:
         data = json.load(json_file)
         for user in data["users"]:
             if user["email"] == email and checkPassword(password, user["password"]):
-                #successful
+                # successful
                 print("Passwords Match.")
                 print("Logging In.")
                 successful = True
-                #call function to enter shell TODO
+                # call function to enter shell TODO
 
-    #unsuccessful
+    # unsuccessful
     if not successful:
         print("Incorrect Credentials. Try again.")
         logIn()
 
 # USER INFO
+
 
 def storeUserInfo(name, email, password):
     """
@@ -216,12 +220,12 @@ def registerNewUser():
     email = str(getEmail())
     userExisted = False
 
-    #check password correctness by parsing data.txt
+    # check password correctness by parsing data.txt
     with open("data.txt") as json_file:
         data = json.load(json_file)
         for user in data["users"]:
             if user["email"] == email:
-                print ("This user already exists.")
+                print("This user already exists.")
                 userExisted = True
                 if query_binary("Do you want to log into your account? (y/n) "):
                     logIn()
@@ -253,6 +257,7 @@ def main():
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
         logIn()
+
 
 if __name__ == "__main__":
     sys.exit(main())
