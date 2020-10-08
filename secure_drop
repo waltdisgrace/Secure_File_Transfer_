@@ -77,6 +77,29 @@ def touch(fname):
     else:
         open(fname, 'a').close()
 
+def printHelp():
+    print('"add"  -> Add a new contact')
+    print('"list" -> List all online contacts')
+    print('"send" -> Transfer file to contact')
+    print('"exit" -> Exit SecureDrop')
+
+def commandHandler():
+    print('Type "help" for commands.')
+    command = ""
+    while True:
+        command = input("Enter command: ")
+        if command.lower() == "add":
+            print("Call add function.")
+        elif command.lower() == "list":
+            print("Call list function.")
+        elif command.lower() == "send":
+            print("Call send function.")
+        elif command.lower() == "help":
+            printHelp()
+        elif command.lower() == "exit":
+            break
+        else:
+            print('Invalid command. Type "help" for commands.')
 
 # CREDENTIALS
 
@@ -213,8 +236,8 @@ def storeUserInfo(name, email, password):
 
 def registerNewUser():
     print("The user registration is a one-time process. Once a user is registered on a client, the"
-          "login module is activated subsequently. After a successful login, a \"secure_drop>\" shell"
-          "is started.")
+          " login module is activated subsequently. After a successful login, a \"secure_drop>\" shell"
+          " is started.")
 
     name = getName()
     email = str(getEmail())
@@ -257,6 +280,7 @@ def main():
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
         logIn()
+        commandHandler()
 
 
 if __name__ == "__main__":
