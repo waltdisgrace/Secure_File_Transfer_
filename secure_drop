@@ -160,6 +160,7 @@ def dumpUserToTextFile(data, file_name):
     with open(file_name, "w") as outfile:
         cPickle.dump(data, outfile)
 
+
 def printDataFile():
     with open("data.txt") as json_file:
         data = json.load(json_file)
@@ -170,6 +171,7 @@ def printDataFile():
             print("Password: " + u["password"])
 
 # LOG IN
+
 
 def getPassword():
     password = getpass.getpass()
@@ -199,6 +201,7 @@ def logIn():
 
 # CONTACT INFO
 
+
 def storeContactInfo(name, email, filename):
     """
     returns the dict of dict that constitutes the user info
@@ -212,9 +215,9 @@ def storeContactInfo(name, email, filename):
 
     user_dict["name"] = name
     user_dict["email"] = email
-    
+
     data["contacts"].append(user_dict)
-    
+
     # open(filename) as data_file:
     with open(filename, "rb") as f:
         data = cPickle.load(f)
@@ -241,7 +244,7 @@ def storeContactInfo(name, email, filename):
         print ("ERROR: ")
         #, io
     """
-    
+
 # USER INFO
 
 
@@ -352,10 +355,11 @@ def psh_help():
     print('"  send" -> Transfer file to contact')
     print('"  exit" -> Exit SecureDrop')
 
+
 def psh_add():
     name = getName()
     email = getEmail()
-        #filename = uuid.uuid4() + ".txt"
+    #filename = uuid.uuid4() + ".txt"
     touch("contacts.txt")
     storeContactInfo(name, email, 'contacts.txt')
     print("  Contact Added.")
