@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import json
+import _pickle as cPickle
+#from cPickle import load, dump
 import os
 import re
 from email_validator import validate_email, EmailNotValidError
@@ -11,26 +13,14 @@ import subprocess
 
 
 # TODO:
-# Registering:
-#  User already exists - DONE by Grace
-#  Passwords don't match - DONE by Billy
-#
-# Login:
-#  Basic impl. - DONE by Grace
-#  Password is incorrect - DONE by Grace
-#
 # Adding Contacts:
-#  Basic impl.
 #  Contact already exists
 #
 # TODO SECURITY:
-# Password is insecure (not enough chars, etc) - DONE by Billy
 # Too many attempts -> lockout
 # Clean up data / encrypt data
-# Hash - DONE by Billy
 #
 # TODO BUGS:
-# Email conversion to string doesn't work -- DONE by David
 # Checking Password - use hash
 # getPassword() 1x or 2x depending on login or register
 #
@@ -163,13 +153,12 @@ def checkPassword(password, hashed_password):
 
 # DATA FILE
 
-def dumpDataToTextFile(data):
+def dumpUserToTextFile(data, file_name):
     """
     data is a dict of dict
     """
-    with open("data.txt", "w") as outfile:
-        json.dump(data, outfile)
-
+    with open(file_name, "w") as outfile:
+        cPickle.dump(data, outfile)
 
 def printDataFile():
     with open("data.txt") as json_file:
@@ -181,7 +170,6 @@ def printDataFile():
             print("Password: " + u["password"])
 
 # LOG IN
-
 
 def getPassword():
     password = getpass.getpass()
@@ -209,6 +197,51 @@ def logIn():
         print("Incorrect Credentials. Try again.")
         logIn()
 
+# CONTACT INFO
+
+def storeContactInfo(name, email, filename):
+    """
+    returns the dict of dict that constitutes the user info
+    the outer dictionary maps the string "users" to a dictionary
+    the inner dictionary maps the strings "name", "email", and "password" to strings for all three of these
+    """
+    data = {}
+    data["contacts"] = []
+
+    user_dict = {}
+
+    user_dict["name"] = name
+    user_dict["email"] = email
+    
+    data["contacts"].append(user_dict)
+    
+    # open(filename) as data_file:
+    with open(filename, "rb") as f:
+        data = cPickle.load(f)
+        a_dict = {"name": name, "email": email}
+        new_data = data["contacts"].append(a_dict)
+        #        with open('contacts.txt','w') as f:
+        dumpUserToTextFile(new_data, filename)
+        #            f.write(json.dumps(new_data, indent=4, sort_keys=True))
+
+    """
+    stackoverflow csharma https://stackoverflow.com/questions/43869140/appending-json-file-through-python-code/43871206#43871206
+    try:
+        with open('contacts.txt') as data_file:    
+            data = json.load(data_file)
+            temp_list = []
+            for dicObj in data["contacts"]:
+                temp_list.append(dicObj)
+                temp_list.append({"name": name, "email": email})
+                data["contacts"] = temp_list
+                a_dict["contacts"] = data["contacts"]
+                with open('contacts.txt','w') as f:
+                    f.write(json.dumps(a_dict, indent=4, sort_keys=True, encoding="utf-8"))
+    except IOError as io:
+        print ("ERROR: ")
+        #, io
+    """
+    
 # USER INFO
 
 
@@ -253,7 +286,7 @@ def registerNewUser():
 
     if not userExisted:
         password = setPassword()
-        dumpDataToTextFile(storeUserInfo(name, email, password))
+        dumpUserToTextFile(storeUserInfo(name, email, password), "data.txt")
         printDataFile()
     else:
         print("Okay. Exiting now.")
@@ -319,9 +352,13 @@ def psh_help():
     print('"  send" -> Transfer file to contact')
     print('"  exit" -> Exit SecureDrop')
 
-
 def psh_add():
-    print("Adding!")
+    name = getName()
+    email = getEmail()
+        #filename = uuid.uuid4() + ".txt"
+    touch("contacts.txt")
+    storeContactInfo(name, email, 'contacts.txt')
+    print("  Contact Added.")
 
 
 def psh_list():
@@ -329,6 +366,7 @@ def psh_list():
 
 
 def psh_send():
+
     print("Sending!")
 
 # MAIN
@@ -353,6 +391,22 @@ def main():
     """
 
     # Shell - Supports add, list, send, exit, help
+    while True:
+        inp = input("secure_drop> ")
+        if inp == "exit":
+            break
+        elif inp[:3] == "cd ":
+            psh_cd(inp[3:])
+        elif inp == "help":
+            psh_help()
+        elif inp == "add":
+            psh_add()
+        elif inp == "list":
+            psh_list()
+        elif inp == "send":
+            psh_send()
+        else:
+            execute_command(inp)
     secureDropShell()
 
 
