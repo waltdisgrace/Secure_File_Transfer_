@@ -205,7 +205,8 @@ def logIn():
 def storeData(name, email, filename):
     db = {}
 
-    newContact = {'name': getHashedPassword(name), 'email': getHashedPassword(email)}
+    newContact = {'name': getHashedPassword(
+        name), 'email': getHashedPassword(email)}
 
     db[name] = newContact
 
@@ -216,21 +217,16 @@ def storeData(name, email, filename):
 
 
 def loadData(filename):
-    dbfile = open(filename, 'rb')
-    db = cPickle.load(dbfile)
-
     objs = []
 
-    # TODO: Print all contacts
-    # Only printing one entry...
-    while 1:
-        try:
-            objs.append(cPickle.load(dbfile))
-        except EOFError:
-            break
+    with (open(filename, "rb")) as dbfile:
+        while True:
+            try:
+                objs.append(cPickle.load(dbfile))
+            except EOFError:
+                break
 
     print(objs)
-
     dbfile.close()
 
 # USER INFO
