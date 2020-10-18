@@ -2,7 +2,6 @@
 
 import json
 import _pickle as cPickle
-#from cPickle import load, dump
 import os
 import re
 from email_validator import validate_email, EmailNotValidError
@@ -12,9 +11,10 @@ import getpass
 import subprocess
 
 
-# TODO:
+# TODO Database:
 # Adding Contacts:
 #  Contact already exists
+#  Read all contacts from file
 #
 # TODO SECURITY:
 # Too many attempts -> lockout
@@ -202,48 +202,36 @@ def logIn():
 # CONTACT INFO
 
 
-def storeContactInfo(name, email, filename):
-    """
-    returns the dict of dict that constitutes the user info
-    the outer dictionary maps the string "users" to a dictionary
-    the inner dictionary maps the strings "name", "email", and "password" to strings for all three of these
-    """
-    data = {}
-    data["contacts"] = []
+def storeData(name, email, filename):
+    db = {}
 
-    user_dict = {}
+    newContact = {'name': name, 'email': email}
 
-    user_dict["name"] = name
-    user_dict["email"] = email
+    db[name] = newContact
 
-    data["contacts"].append(user_dict)
+    dbfile = open(filename, 'ab')
 
-    # open(filename) as data_file:
-    with open(filename, "rb") as f:
-        data = cPickle.load(f)
-        a_dict = {"name": name, "email": email}
-        new_data = data["contacts"].append(a_dict)
-        #        with open('contacts.txt','w') as f:
-        dumpUserToTextFile(new_data, filename)
-        #            f.write(json.dumps(new_data, indent=4, sort_keys=True))
+    cPickle.dump(db, dbfile)
+    dbfile.close()
 
-    """
-    stackoverflow csharma https://stackoverflow.com/questions/43869140/appending-json-file-through-python-code/43871206#43871206
-    try:
-        with open('contacts.txt') as data_file:    
-            data = json.load(data_file)
-            temp_list = []
-            for dicObj in data["contacts"]:
-                temp_list.append(dicObj)
-                temp_list.append({"name": name, "email": email})
-                data["contacts"] = temp_list
-                a_dict["contacts"] = data["contacts"]
-                with open('contacts.txt','w') as f:
-                    f.write(json.dumps(a_dict, indent=4, sort_keys=True, encoding="utf-8"))
-    except IOError as io:
-        print ("ERROR: ")
-        #, io
-    """
+
+def loadData(filename):
+    dbfile = open(filename, 'rb')
+    db = cPickle.load(dbfile)
+
+    objs = []
+
+    # TODO: Print all contacts
+    # Only printing one entry...
+    while 1:
+        try:
+            objs.append(cPickle.load(dbfile))
+        except EOFError:
+            break
+
+    print(objs)
+
+    dbfile.close()
 
 # USER INFO
 
@@ -349,6 +337,9 @@ def psh_cd(path):
         print("cd: no such file or directory: {}".format(path))
 
 
+# Shell commands
+
+
 def psh_help():
     print('"  add"  -> Add a new contact')
     print('"  list" -> List all online contacts')
@@ -359,24 +350,24 @@ def psh_help():
 def psh_add():
     name = getName()
     email = getEmail()
-    #filename = uuid.uuid4() + ".txt"
-    touch("contacts.txt")
-    storeContactInfo(name, email, 'contacts.txt')
+    storeData(name, email, 'contacts')
     print("  Contact Added.")
 
 
 def psh_list():
-    print("Listing!")
+    print("  Listing!")
+    loadData("contacts")
 
 
 def psh_send():
 
-    print("Sending!")
+    print("  Sending!")
 
 # MAIN
 
 
 def main():
+    # Reigstration - complete
     """
     # data.txt is the file that contains user credientials
     touch("data.txt")
@@ -391,7 +382,6 @@ def main():
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
         logIn()
-        commandHandler()
     """
 
     # Shell - Supports add, list, send, exit, help
