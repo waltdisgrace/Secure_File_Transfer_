@@ -346,7 +346,7 @@ def psh_help():
 def psh_add():
     name = getName()
     email = getEmail()
-    storeData(name, email, 'contacts')
+    storeData(name, email, "contacts.txt")
     print("  Contact Added.")
 
 
@@ -363,12 +363,19 @@ def psh_send():
 
 
 def main():
-    # Reigstration - complete
-    """
+
     # data.txt is the file that contains user credientials
     touch("data.txt")
+    # contacts.txt is the file the contains contacts
+    touch("contacts.txt")
 
-    # if the file is empty, prompt user registration
+    # change file permissions to enhance security
+    command = ["chmod", "600", "data.txt"]
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE)        
+    command = ["chmod", "600", "contacts.txt"]
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE)    
+
+    # if the data.txt file is empty, prompt user registration
     if os.path.getsize("data.txt") == 0:
         print("No users are registered with this client.")
 
@@ -378,7 +385,6 @@ def main():
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
         logIn()
-    """
 
     # Shell - Supports add, list, send, exit, help
     while True:
