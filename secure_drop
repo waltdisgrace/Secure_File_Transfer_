@@ -160,6 +160,7 @@ def dumpUserToTextFile(data, file_name):
     with open(file_name, "w") as outfile:
         cPickle.dump(data, outfile)
 
+
 def dumpRegisterToTextFile(data, file_name):
     with open(file_name, "w") as outfile:
         json.dump(data, outfile)
@@ -282,7 +283,7 @@ def registerNewUser():
     '''
     password = setPassword()
     dumpRegisterToTextFile(storeUserInfo(name, email, password), "data.txt")
-    #printDataFile()
+    # printDataFile()
     '''
     else:
         print("Okay. Exiting now.")
@@ -385,7 +386,7 @@ def main():
     subprocess.Popen(command, stdout=subprocess.PIPE)        
     command = ["chmod", "600", "contacts.txt"]
     subprocess.Popen(command, stdout=subprocess.PIPE)   
-    ''' 
+    '''
 
     # if the data.txt file is empty, prompt user registration
     if os.path.getsize("data.txt") == 0:
