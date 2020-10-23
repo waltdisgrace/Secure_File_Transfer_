@@ -160,6 +160,10 @@ def dumpUserToTextFile(data, file_name):
     with open(file_name, "w") as outfile:
         cPickle.dump(data, outfile)
 
+def dumpRegisterToTextFile(data, file_name):
+    with open(file_name, "w") as outfile:
+        json.dump(data, outfile)
+
 
 def printDataFile():
     with open("data.txt") as json_file:
@@ -260,6 +264,9 @@ def registerNewUser():
     email = str(getEmail())
     userExisted = False
 
+    #dumpRegisterToTextFile(storeUserInfo(name, "billy@gmail.com", "password"), "data.txt")
+
+    '''
     # check password correctness by parsing data.txt
     with open("data.txt") as json_file:
         data = json.load(json_file)
@@ -272,12 +279,15 @@ def registerNewUser():
                 break
 
     if not userExisted:
-        password = setPassword()
-        dumpUserToTextFile(storeUserInfo(name, email, password), "data.txt")
-        printDataFile()
+    '''
+    password = setPassword()
+    dumpRegisterToTextFile(storeUserInfo(name, email, password), "data.txt")
+    #printDataFile()
+    '''
     else:
         print("Okay. Exiting now.")
         exit(1)
+    '''
 
 
 def execute_command(command):
@@ -352,7 +362,7 @@ def psh_add():
 
 def psh_list():
     print("  Listing!")
-    loadData("contacts")
+    loadData("contacts.txt")
 
 
 def psh_send():
@@ -363,17 +373,19 @@ def psh_send():
 
 
 def main():
-
+    # Reigstration - complete
     # data.txt is the file that contains user credientials
     touch("data.txt")
     # contacts.txt is the file the contains contacts
     touch("contacts.txt")
 
     # change file permissions to enhance security
+    '''
     command = ["chmod", "600", "data.txt"]
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE)        
+    subprocess.Popen(command, stdout=subprocess.PIPE)        
     command = ["chmod", "600", "contacts.txt"]
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE)    
+    subprocess.Popen(command, stdout=subprocess.PIPE)   
+    ''' 
 
     # if the data.txt file is empty, prompt user registration
     if os.path.getsize("data.txt") == 0:
@@ -385,25 +397,8 @@ def main():
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
         logIn()
-
-    # Shell - Supports add, list, send, exit, help
-    while True:
-        inp = input("secure_drop> ")
-        if inp == "exit":
-            break
-        elif inp[:3] == "cd ":
-            psh_cd(inp[3:])
-        elif inp == "help":
-            psh_help()
-        elif inp == "add":
-            psh_add()
-        elif inp == "list":
-            psh_list()
-        elif inp == "send":
-            psh_send()
-        else:
-            execute_command(inp)
-    secureDropShell()
+        # Shell - Supports add, list, send, exit, help
+        secureDropShell()
 
 
 if __name__ == "__main__":
