@@ -11,24 +11,6 @@ import getpass
 import subprocess
 
 
-# TODO Database:
-# Adding Contacts:
-#  Contact already exists
-#  Read all contacts from file
-#
-# TODO SECURITY:
-# Too many attempts -> lockout
-# Clean up data / encrypt data
-#
-# TODO BUGS:
-# Checking Password - use hash
-# getPassword() 1x or 2x depending on login or register
-#
-# POSSIBLE TODO:
-# Asterisks for passwords (like PDF)
-# Login - distinguish between incorrect pwd, incorrect email?
-
-
 def query_binary(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
 
