@@ -9,3 +9,32 @@ Team members: David Razmadze, Grace Chin, William Stewart
 ```
 pip3 install -r requirements.txt
 ```
+
+
+## TODO's
+
+### Database:
+
+Adding Contacts
+
+Contact already exists
+
+Read all contacts from file
+
+### Security:
+
+Too many attempts -> lockout
+
+Clean up data / encrypt data
+
+### Bugs:
+
+Checking Password - use hash
+
+getPassword() 1x or 2x depending on login or register
+
+### Others:
+
+Asterisks for passwords (like PDF)
+
+Login - distinguish between incorrect pwd, incorrect email?
