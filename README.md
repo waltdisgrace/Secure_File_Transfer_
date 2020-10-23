@@ -10,6 +10,22 @@ Team members: David Razmadze, Grace Chin, William Stewart
 pip3 install -r requirements.txt
 ```
 
+## Sections of Code 
+
+1. Shell commands 
+
+2. Credentials
+
+3. Password
+
+4. Logging In
+
+5. Database
+
+6. Helper Functions
+
+7. MAIN
+
 
 ## TODO's
 
