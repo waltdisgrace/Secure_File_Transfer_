@@ -9,7 +9,3 @@ Team members: David Razmadze, Grace Chin, William Stewart
 ```
 pip3 install -r requirements.txt
 ```
-
-## User
-
-<img src="https://i.ibb.co/HTZRzgP/Project-6.jpg" alt="User" border="0">
