@@ -140,6 +140,12 @@ def setPassword():
     number, uppercase letter, lowercase letter, and special symbol. Try again.""")
         password = getpass.getpass()
 
+    password_copy = getpass.getpass("Re-enter Password: ")
+    if password_copy != password:
+        print("Passwords do not match. Try again.")
+        password = setPassword()
+    return password
+
 
 def getPassword():
     password = getpass.getpass()
