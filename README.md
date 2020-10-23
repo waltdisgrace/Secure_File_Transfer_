@@ -14,6 +14,16 @@ pip3 install -r requirements.txt
 
 1. Shell commands 
 
+```
+secureDropShell()
+psh_cd(path)
+psh_help()
+psh_add()
+psh_list()
+psh_send()
+execute_command(command)
+```
+
 2. Credentials
 
 3. Password
