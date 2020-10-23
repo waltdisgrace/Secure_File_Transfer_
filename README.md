@@ -26,13 +26,45 @@ execute_command(command)
 
 2. Credentials
 
+```
+getEmail()
+getName()
+```
+
 3. Password
+
+```
+setPassword()
+getPassword()
+getHashedPassword(password)
+passwordMeetsRequirements(password)
+checkPassword(password, hashed_password)
+```
 
 4. Logging In
 
+```
+logIn()
+storeUserInfo(name, email, password)
+```
+
 5. Database
 
+```
+storeData(name, email, filename)
+loadData(filename)
+registerNewUser()
+dumpUserToTextFile(data, file_name)
+dumpRegisterToTextFile(data, file_name)
+printDataFile()
+```
+
 6. Helper Functions
+
+```
+query_binary(question, default="yes")
+touch(fname)
+```
 
 7. MAIN
 
