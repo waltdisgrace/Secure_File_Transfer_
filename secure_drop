@@ -146,6 +146,10 @@ def getPassword():
     return password
 
 
+def getHashedPassword(password):
+    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12))
+
+
 def passwordMeetsRequirements(password):
     reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
     return re.search(re.compile(reg), password)
@@ -155,10 +159,6 @@ def passwordMeetsRequirements(password):
         print("Passwords do not match. Try again.")
         password = setPassword()
     return password
-
-
-def getHashedPassword(password):
-    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12))
 
 
 def checkPassword(password, hashed_password):
@@ -256,9 +256,31 @@ def registerNewUser():
 
     name = getName()
     email = str(getEmail())
-    password = setPassword()
+    userExisted = False
 
+    #dumpRegisterToTextFile(storeUserInfo(name, "billy@gmail.com", "password"), "data.txt")
+
+    '''
+    # check password correctness by parsing data.txt
+    with open("data.txt") as json_file:
+        data = json.load(json_file)
+        for user in data["users"]:
+            if user["email"] == email:
+                print("This user already exists.")
+                userExisted = True
+                if query_binary("Do you want to log into your account? (y/n) "):
+                    logIn()
+                break
+    if not userExisted:
+    '''
+    password = setPassword()
     dumpRegisterToTextFile(storeUserInfo(name, email, password), "data.txt")
+    # printDataFile()
+    '''
+    else:
+        print("Okay. Exiting now.")
+        exit(1)
+    '''
 
 
 def dumpUserToTextFile(data, file_name):
