@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from email_validator import validate_email, EmailNotValidError
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 import _pickle as cPickle
 import bcrypt
 import json
@@ -11,7 +13,8 @@ import getpass
 import subprocess
 
 # # # # # 1. SHELL COMMANDS # # # # #
-
+AES_KEY_SIZE = 16
+symm_key = get_random_bytes(AES_KEY_SIZE)
 
 def secureDropShell():
     while True:
@@ -56,7 +59,12 @@ def psh_add():
 
 def psh_list():
     print("  Listing!")
-    loadData("contacts.txt")
+    if os.path.exists("contacts.bin"):
+        aesDecryptFile("contacts.bin", symm_key)
+        loadData("contacts.txt")
+        aesEncryptFile("contacts.txt", symm_key)
+    else:
+        print("You have no contacts.")
 
 
 def psh_send():
@@ -153,18 +161,12 @@ def getPassword():
 
 
 def getHashedPassword(password):
-    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12))
+    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(16))
 
 
 def passwordMeetsRequirements(password):
     reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{6,20}$"
     return re.search(re.compile(reg), password)
-
-    password_copy = getpass.getpass("Re-enter Password: ")
-    if password_copy != password:
-        print("Passwords do not match. Try again.")
-        password = setPassword()
-    return password
 
 
 def checkPassword(password, hashed_password):
@@ -230,8 +232,7 @@ def storeUserInfo(name, email, password):
 def storeData(name, email, filename):
     db = {}
 
-    newContact = {'name': getHashedPassword(
-        name), 'email': getHashedPassword(email)}
+    newContact = {'name': name, 'email': email}
 
     db[name] = newContact
 
@@ -239,6 +240,8 @@ def storeData(name, email, filename):
 
     cPickle.dump(db, dbfile)
     dbfile.close()
+
+    aesEncryptFile(filename, symm_key)
 
 
 def loadData(filename):
@@ -262,11 +265,13 @@ def registerNewUser():
 
     name = getName()
     email = str(getEmail())
+    
+    '''
     userExisted = False
 
     #dumpRegisterToTextFile(storeUserInfo(name, "billy@gmail.com", "password"), "data.txt")
 
-    '''
+
     # check password correctness by parsing data.txt
     with open("data.txt") as json_file:
         data = json.load(json_file)
@@ -296,6 +301,28 @@ def dumpUserToTextFile(data, file_name):
     with open(file_name, "w") as outfile:
         cPickle.dump(data, outfile)
 
+def aesEncryptFile(file_name, key):
+    cipher = AES.new(key, AES.MODE_EAX)
+    data = open(file_name, 'rb').read()
+    ciphertext, tag = cipher.encrypt_and_digest(data)
+
+    file_name = file_name.replace(".txt", "")
+    file_name += ".bin"
+    file_out = open(file_name, "wb")
+    [ file_out.write(x) for x in (cipher.nonce, tag, ciphertext) ]
+    file_out.close()
+
+    os.remove("contacts.txt")
+
+def aesDecryptFile(file_name, key):
+    file_in = open(file_name, "rb")
+    nonce, tag, ciphertext = [ file_in.read(x) for x in (16, 16, -1) ]
+
+    cipher = AES.new(key, AES.MODE_EAX, nonce)
+    file_name = file_name.replace(".bin", "")
+    file_name += ".txt"
+    file_out = open(file_name, "wb")
+    file_out.write(cipher.decrypt_and_verify(ciphertext, tag))
 
 def dumpRegisterToTextFile(data, file_name):
     with open(file_name, "w") as outfile:
