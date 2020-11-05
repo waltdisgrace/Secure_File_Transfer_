@@ -53,15 +53,17 @@ def psh_add():
     name = getName()
     email = getEmail()
     storeData(name, email, "contacts.txt")
+    #loadData("contacts.txt")
+    #aesEncryptFile(contact_data, symm_key)
     print("  Contact Added.")
 
 
 def psh_list():
     print("  Listing!")
-    if os.path.exists("contacts.bin"):
-        aesDecryptFile("contacts.bin", symm_key)
+    if os.path.getsize("contacts.bin") > 0:
+        #aesDecryptFile("contacts.bin", symm_key)
         loadData("contacts.txt")
-        aesEncryptFile("contacts.txt", symm_key)
+        #aesEncryptFile(loadData("contacts.txt"), symm_key)
     else:
         print("You have no contacts.")
 
@@ -186,6 +188,7 @@ def checkPassword(password, hashed_password):
 
 
 def logIn():
+    touch("contacts.bin")
     email = getEmail()
     password = getPassword()
     successful = False
@@ -229,6 +232,11 @@ def storeUserInfo(name, email, password):
 
 
 def storeData(name, email, filename):
+    if os.path.getsize("contacts.bin") > 0:
+        aesDecryptFile("contacts.bin", symm_key)
+    else:
+        touch("contacts.txt")
+
     db = {}
 
     newContact = {'name': name, 'email': email}
@@ -242,8 +250,9 @@ def storeData(name, email, filename):
 
     aesEncryptFile(filename, symm_key)
 
-
 def loadData(filename):
+    aesDecryptFile("contacts.bin", symm_key)
+
     objs = []
 
     with (open(filename, "rb")) as dbfile:
@@ -256,8 +265,27 @@ def loadData(filename):
     print(objs)
     dbfile.close()
 
+    aesEncryptFile("contacts.txt", symm_key)
+
+'''
+def loadData(filename):
+    objs = []
+
+    with (open(filename, "rb")) as dbfile:
+        while True:
+            try:
+                objs.append(cPickle.load(dbfile))
+            except EOFError:
+                break
+
+    dbfile.close()
+    return objs
+'''
 
 def registerNewUser():
+    if os.path.exists("contacts.bin"):
+        os.remove("contacts.bin")
+
     print("The user registration is a one-time process. Once a user is registered on a client, the"
           " login module is activated subsequently. After a successful login, a \"secure_drop>\" shell"
           " is started.")
@@ -361,8 +389,8 @@ def touch(fname):
 # # # # # 7. Encryption # # # # #
 
 AES_KEY_SIZE = 16
-symm_key = get_random_bytes(AES_KEY_SIZE)
-
+f = open("symm_key.txt", "r")
+symm_key = f.read().encode("utf8")
 
 def aesEncryptFile(file_name, key):
     cipher = AES.new(key, AES.MODE_EAX)
@@ -377,6 +405,20 @@ def aesEncryptFile(file_name, key):
 
     os.remove("contacts.txt")
 
+'''
+def aesEncryptFile(data, key):
+    cipher = AES.new(key, AES.MODE_EAX)
+    for i in data:
+        data[i] = data[i].encode("utf8")
+    ciphertext, tag = cipher.encrypt_and_digest(data)
+
+    file_out = open("contacts.bin", "wb")
+    [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
+    file_out.close()
+
+    os.remove("contacts.txt")
+'''
+
 
 def aesDecryptFile(file_name, key):
     file_in = open(file_name, "rb")
@@ -388,14 +430,17 @@ def aesDecryptFile(file_name, key):
     file_out = open(file_name, "wb")
     file_out.write(cipher.decrypt_and_verify(ciphertext, tag))
 
+    return file_name
+
 
 # # # # #    8. MAIN    # # # # #
 
 def main():
     # data.txt is the file that contains user credientials
     touch("data.txt")
+    #touch("contacts.bin")
     # contacts.txt is the file the contains contacts
-    touch("contacts.txt")
+    #touch("contacts.txt")
 
     # change file permissions to enhance security
     '''
