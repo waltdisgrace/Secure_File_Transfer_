@@ -12,6 +12,10 @@ import sys
 import getpass
 import subprocess
 
+
+AES_KEY_SIZE = 65
+
+
 # # # # # 1. SHELL COMMANDS # # # # #
 
 
@@ -188,27 +192,32 @@ def checkPassword(password, hashed_password):
 
 
 def logIn():
-    touch("contacts.bin")
-    email = getEmail()
-    password = getPassword()
+
     successful = False
+    if os.path.getsize("data.txt") > 0:
+        touch("contacts.bin")
+        email = getEmail()
+        password = getPassword()
+        
+        # check password correctness by parsing data.txt
+        with open("data.txt") as json_file:
+            data = json.load(json_file)
+            for user in data["users"]:
+                if user["email"] == email and checkPassword(password, user["password"]):
+                    symm_key = user["password"] + "AbC1!"
+                    # successful
+                    print("Passwords Match.")
+                    print("Logging In.")
+                    successful = True
+                    # call function to enter shell TODO
+                    # unsuccessful
+                    if not successful:
+                        print("Incorrect Credentials. Try again.")
+                        logIn()
+    else:
+        print("There are no users registered")
 
-    # check password correctness by parsing data.txt
-    with open("data.txt") as json_file:
-        data = json.load(json_file)
-        for user in data["users"]:
-            if user["email"] == email and checkPassword(password, user["password"]):
-                # successful
-                print("Passwords Match.")
-                print("Logging In.")
-                successful = True
-                # call function to enter shell TODO
-
-    # unsuccessful
-    if not successful:
-        print("Incorrect Credentials. Try again.")
-        logIn()
-
+    return successful
 
 def storeUserInfo(name, email, password):
     """
@@ -292,33 +301,9 @@ def registerNewUser():
 
     name = getName()
     email = str(getEmail())
-
-    '''
-    userExisted = False
-
-    #dumpRegisterToTextFile(storeUserInfo(name, "billy@gmail.com", "password"), "data.txt")
-
-
-    # check password correctness by parsing data.txt
-    with open("data.txt") as json_file:
-        data = json.load(json_file)
-        for user in data["users"]:
-            if user["email"] == email:
-                print("This user already exists.")
-                userExisted = True
-                if query_binary("Do you want to log into your account? (y/n) "):
-                    logIn()
-                break
-    if not userExisted:
-    '''
     password = setPassword()
+
     dumpRegisterToTextFile(storeUserInfo(name, email, password), "data.txt")
-    # printDataFile()
-    '''
-    else:
-        print("Okay. Exiting now.")
-        exit(1)
-    '''
 
 
 def dumpUserToTextFile(data, file_name):
@@ -388,10 +373,6 @@ def touch(fname):
 
 # # # # # 7. Encryption # # # # #
 
-AES_KEY_SIZE = 16
-f = open("symm_key.txt", "r")
-symm_key = f.read().encode("utf8")
-
 def aesEncryptFile(file_name, key):
     cipher = AES.new(key, AES.MODE_EAX)
     data = open(file_name, 'rb').read()
@@ -459,9 +440,9 @@ def main():
 
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
-        logIn()
-        # Shell - Supports add, list, send, exit, help
-        secureDropShell()
+        if logIn():
+            # Shell - Supports add, list, send, exit, help
+            secureDropShell()
 
 
 if __name__ == "__main__":
