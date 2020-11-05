@@ -13,8 +13,7 @@ import getpass
 import subprocess
 
 
-AES_KEY_SIZE = 65
-
+SYMM_KEY = "stub"
 
 # # # # # 1. SHELL COMMANDS # # # # #
 
@@ -47,27 +46,23 @@ def psh_cd(path):
 
 
 def psh_help():
-    print('"  add"  -> Add a new contact')
-    print('"  list" -> List all online contacts')
-    print('"  send" -> Transfer file to contact')
-    print('"  exit" -> Exit SecureDrop')
+    print('  "add"  -> Add a new contact')
+    print('  "list" -> List all online contacts')
+    print('  "send" -> Transfer file to contact')
+    print('  "exit" -> Exit SecureDrop')
 
 
 def psh_add():
     name = getName()
     email = getEmail()
     storeData(name, email, "contacts.txt")
-    #loadData("contacts.txt")
-    #aesEncryptFile(contact_data, symm_key)
     print("  Contact Added.")
 
 
 def psh_list():
     print("  Listing!")
     if os.path.getsize("contacts.bin") > 0:
-        #aesDecryptFile("contacts.bin", symm_key)
         loadData("contacts.txt")
-        #aesEncryptFile(loadData("contacts.txt"), symm_key)
     else:
         print("You have no contacts.")
 
@@ -192,7 +187,7 @@ def checkPassword(password, hashed_password):
 
 
 def logIn():
-
+    global SYMM_KEY
     successful = False
     if os.path.getsize("data.txt") > 0:
         touch("contacts.bin")
@@ -204,7 +199,7 @@ def logIn():
             data = json.load(json_file)
             for user in data["users"]:
                 if user["email"] == email and checkPassword(password, user["password"]):
-                    symm_key = user["password"] + "AbC1!"
+                    SYMM_KEY = user["password"][3:19].encode("utf-8")
                     # successful
                     print("Passwords Match.")
                     print("Logging In.")
@@ -241,8 +236,9 @@ def storeUserInfo(name, email, password):
 
 
 def storeData(name, email, filename):
+    global SYMM_KEY
     if os.path.getsize("contacts.bin") > 0:
-        aesDecryptFile("contacts.bin", symm_key)
+        aesDecryptFile("contacts.bin", SYMM_KEY)
     else:
         touch("contacts.txt")
 
@@ -257,10 +253,11 @@ def storeData(name, email, filename):
     cPickle.dump(db, dbfile)
     dbfile.close()
 
-    aesEncryptFile(filename, symm_key)
+    aesEncryptFile(filename, SYMM_KEY)
 
 def loadData(filename):
-    aesDecryptFile("contacts.bin", symm_key)
+    global SYMM_KEY
+    aesDecryptFile("contacts.bin", SYMM_KEY)
 
     objs = []
 
@@ -274,22 +271,8 @@ def loadData(filename):
     print(objs)
     dbfile.close()
 
-    aesEncryptFile("contacts.txt", symm_key)
+    aesEncryptFile("contacts.txt", SYMM_KEY)
 
-'''
-def loadData(filename):
-    objs = []
-
-    with (open(filename, "rb")) as dbfile:
-        while True:
-            try:
-                objs.append(cPickle.load(dbfile))
-            except EOFError:
-                break
-
-    dbfile.close()
-    return objs
-'''
 
 def registerNewUser():
     if os.path.exists("contacts.bin"):
@@ -386,20 +369,6 @@ def aesEncryptFile(file_name, key):
 
     os.remove("contacts.txt")
 
-'''
-def aesEncryptFile(data, key):
-    cipher = AES.new(key, AES.MODE_EAX)
-    for i in data:
-        data[i] = data[i].encode("utf8")
-    ciphertext, tag = cipher.encrypt_and_digest(data)
-
-    file_out = open("contacts.bin", "wb")
-    [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
-    file_out.close()
-
-    os.remove("contacts.txt")
-'''
-
 
 def aesDecryptFile(file_name, key):
     file_in = open(file_name, "rb")
@@ -417,6 +386,7 @@ def aesDecryptFile(file_name, key):
 # # # # #    8. MAIN    # # # # #
 
 def main():
+
     # data.txt is the file that contains user credientials
     touch("data.txt")
     #touch("contacts.bin")
@@ -443,7 +413,6 @@ def main():
         if logIn():
             # Shell - Supports add, list, send, exit, help
             secureDropShell()
-
 
 if __name__ == "__main__":
     sys.exit(main())
