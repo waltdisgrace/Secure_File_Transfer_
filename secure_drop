@@ -189,14 +189,14 @@ def checkPassword(password, hashed_password):
 def logIn():
     global SYMM_KEY
     successful = False
-    if os.path.getsize("data.txt") > 0:
+    if os.path.getsize("credentials.txt") > 0:
         touch("contacts.bin")
         chmod("contacts.bin", 0o600)
         email = getEmail()
         password = getPassword()
-        
-        # check password correctness by parsing data.txt
-        with open("data.txt") as json_file:
+
+        # check password correctness by parsing credentials.txt
+        with open("credentials.txt") as json_file:
             data = json.load(json_file)
             for user in data["users"]:
                 if user["email"] == email and checkPassword(password, user["password"]):
@@ -214,6 +214,7 @@ def logIn():
         print("There are no users registered")
 
     return successful
+
 
 def storeUserInfo(name, email, password):
     """
@@ -243,7 +244,7 @@ def storeData(name, email, filename):
     else:
         touch("contacts.txt")
         chmod("contacts.txt", 0o600)
-        
+
     db = {}
 
     newContact = {'name': name, 'email': email}
@@ -256,6 +257,7 @@ def storeData(name, email, filename):
     dbfile.close()
 
     aesEncryptFile(filename, SYMM_KEY)
+
 
 def loadData(filename):
     global SYMM_KEY
@@ -288,7 +290,8 @@ def registerNewUser():
     email = str(getEmail())
     password = setPassword()
 
-    dumpRegisterToTextFile(storeUserInfo(name, email, password), "data.txt")
+    dumpRegisterToTextFile(storeUserInfo(
+        name, email, password), "credentials.txt")
 
 
 def dumpUserToTextFile(data, file_name):
@@ -305,7 +308,7 @@ def dumpRegisterToTextFile(data, file_name):
 
 
 def printDataFile():
-    with open("data.txt") as json_file:
+    with open("credentials.txt") as json_file:
         data = json.load(json_file)
         for u in data["users"]:
             print()
@@ -388,12 +391,12 @@ def aesDecryptFile(file_name, key):
 
 def main():
 
-    # data.txt is the file that contains user credientials
-    touch("data.txt")
-    chmod("data.txt", 0o600)
+    # credentials.txt is the file that contains user credientials
+    touch("credentials.txt")
+    chmod("credentials.txt", 0o600)
 
-    # if the data.txt file is empty, prompt user registration
-    if os.path.getsize("data.txt") == 0:
+    # if the credentials.txt file is empty, prompt user registration
+    if os.path.getsize("credentials.txt") == 0:
         print("No users are registered with this client.")
 
     if query_binary("Do you want to register a new user (y/n)? "):
@@ -404,6 +407,7 @@ def main():
         if logIn():
             # Shell - Supports add, list, send, exit, help
             secureDropShell()
+
 
 if __name__ == "__main__":
     sys.exit(main())

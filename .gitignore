@@ -1,6 +1,8 @@
-data.txt
 .vscode
+
+credentials.txt
 contacts.txt
 contacts.bin
+
 public.pem
 private.pem
