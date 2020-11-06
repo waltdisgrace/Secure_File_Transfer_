@@ -4,13 +4,19 @@ Team members: David Razmadze, Grace Chin, William Stewart
 
 ## Goal: Securely transfer a file to another person's computer who is in our contact list and is on the same network (wired/wirelss)
 
-## Install requirements
+## How to run the program
 
+### Install required packages
 ```
 ./setup.sh 
 ```
 
-## Cleanup program files
+### Run program
+```
+./secure_drop
+```
+
+### Optional: Cleanup program files
 
 ```
 ./cleanup.sh 
