@@ -75,8 +75,6 @@ touch(fname)
 7. Encryption
 
 ```
-AES_KEY_SIZE
-symm_key
 
 aesEncryptFile(file_name, key)
 aesDecryptFile(file_name, key)
@@ -86,3 +84,7 @@ aesDecryptFile(file_name, key)
 
 
 8. MAIN
+
+```
+main()
+```
