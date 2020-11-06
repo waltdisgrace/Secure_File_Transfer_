@@ -11,7 +11,7 @@ import re
 import sys
 import getpass
 import subprocess
-
+from os import chmod
 
 SYMM_KEY = "stub"
 
@@ -191,6 +191,7 @@ def logIn():
     successful = False
     if os.path.getsize("data.txt") > 0:
         touch("contacts.bin")
+        chmod("contacts.bin", 0o600)
         email = getEmail()
         password = getPassword()
         
@@ -241,7 +242,8 @@ def storeData(name, email, filename):
         aesDecryptFile("contacts.bin", SYMM_KEY)
     else:
         touch("contacts.txt")
-
+        chmod("contacts.txt", 0o600)
+        
     db = {}
 
     newContact = {'name': name, 'email': email}
@@ -366,20 +368,19 @@ def aesEncryptFile(file_name, key):
     file_out = open(file_name, "wb")
     [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
     file_out.close()
-
+    chmod(file_name, 0o600)
     os.remove("contacts.txt")
 
 
 def aesDecryptFile(file_name, key):
     file_in = open(file_name, "rb")
     nonce, tag, ciphertext = [file_in.read(x) for x in (16, 16, -1)]
-
     cipher = AES.new(key, AES.MODE_EAX, nonce)
     file_name = file_name.replace(".bin", "")
     file_name += ".txt"
     file_out = open(file_name, "wb")
     file_out.write(cipher.decrypt_and_verify(ciphertext, tag))
-
+    chmod(file_name, 0o600)
     return file_name
 
 
@@ -389,17 +390,7 @@ def main():
 
     # data.txt is the file that contains user credientials
     touch("data.txt")
-    #touch("contacts.bin")
-    # contacts.txt is the file the contains contacts
-    #touch("contacts.txt")
-
-    # change file permissions to enhance security
-    '''
-    command = ["chmod", "600", "data.txt"]
-    subprocess.Popen(command, stdout=subprocess.PIPE)        
-    command = ["chmod", "600", "contacts.txt"]
-    subprocess.Popen(command, stdout=subprocess.PIPE)   
-    '''
+    chmod("data.txt", 0o600)
 
     # if the data.txt file is empty, prompt user registration
     if os.path.getsize("data.txt") == 0:
