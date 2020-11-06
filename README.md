@@ -16,6 +16,51 @@ Team members: David Razmadze, Grace Chin, William Stewart
 ./secure_drop
 ```
 
+### User Registration and Login
+```
+./secure_drop 
+No users are registered with this client.
+Do you want to register a new user (y/n)?  [Y/n] 
+y
+The user registration is a one-time process. Once a user is registered on a client, the login module is activated subsequently. After a successful login, a "secure_drop>" shell is started.
+Enter Full Name: David Razmadze
+Enter Email Address: david@gmail.com
+Password: 
+Re-enter Password: 
+Do you want to log in (y/n)?  [Y/n] 
+y
+Enter Email Address: david@gmail.com
+Password: 
+Passwords Match.
+Logging In.
+secure_drop> 
+
+```
+
+### Help
+
+```
+secure_drop> help
+  "add"  -> Add a new contact
+  "list" -> List all online contacts
+  "send" -> Transfer file to contact
+  "exit" -> Exit SecureDrop
+```
+
+### Add and list contact
+```
+
+secure_drop> add 
+Enter Full Name: Grace Chin
+Enter Email Address: grace@gmail.com
+  Contact Added.
+secure_drop> list
+  Listing!
+[{'Grace Chin': {'name': 'Grace Chin', 'email': 'grace@gmail.com'}}]
+secure_drop>
+
+```
+
 ### Optional: Cleanup program files
 
 ```
