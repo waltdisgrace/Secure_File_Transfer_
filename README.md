@@ -34,7 +34,6 @@ Password:
 Passwords Match.
 Logging In.
 secure_drop> 
-
 ```
 
 ### Help
@@ -49,7 +48,6 @@ secure_drop> help
 
 ### Add and list contact
 ```
-
 secure_drop> add 
 Enter Full Name: Grace Chin
 Enter Email Address: grace@gmail.com
@@ -58,7 +56,6 @@ secure_drop> list
   Listing!
 [{'Grace Chin': {'name': 'Grace Chin', 'email': 'grace@gmail.com'}}]
 secure_drop>
-
 ```
 
 ### Optional: Cleanup program files
@@ -128,11 +125,8 @@ touch(fname)
 7. Encryption
 
 ```
-
 aesEncryptFile(file_name, key)
 aesDecryptFile(file_name, key)
-
-
 ```
 
 
