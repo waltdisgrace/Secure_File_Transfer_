@@ -208,8 +208,8 @@ def logIn():
                     # call function to enter shell TODO
                     # unsuccessful
                 if not successful:
-                        print("Incorrect Credentials. Try again.")
-                        successful = logIn()
+                    print("Incorrect Credentials. Try again.")
+                    successful = logIn()
     else:
         print("There are no users registered")
 
