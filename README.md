@@ -7,7 +7,13 @@ Team members: David Razmadze, Grace Chin, William Stewart
 ## Install requirements
 
 ```
-pip3 install -r requirements.txt
+./setup.sh 
+```
+
+## Cleanup program files
+
+```
+./cleanup.sh 
 ```
 
 ## Sections of Code 
