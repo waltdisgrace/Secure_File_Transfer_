@@ -69,10 +69,10 @@ secure_drop>
 ## Summary of Security Features Implemented
 
 1. Password Requirements: Passwords must adhere to a password policy that ensures a certain length and level of complexity.
-2. Salted Hashes: Passwords are hashed and salted; and only the password hashes are stored in memory, not the actual passwords.
+2. Salted Hashes: Passwords are hashed and salted; only the password hashes are stored in memory, not the actual passwords.
 3. Hidden Characters when Typing Passwords: When users type their passwords via stdin, no characters visibly appear on the screen.
 4. File Permissions: Files that contain confidential information are set to have the strictest possible permissions such that the program can still read and write to those files.
-5. Encryption: The contacts file is asymmetrically encrypted using AES.
+5. Encryption: The contacts file is symmetrically encrypted using AES; it is decrypted using a key that is derived from the user's password hash.
 
 ---
 
