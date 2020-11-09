@@ -2,7 +2,7 @@
 
 Team members: David Razmadze, Grace Chin, William Stewart
 
-## Goal: Securely transfer a file to another person's computer who is in our contact list and is on the same network (wired/wirelss)
+## Goal: Securely transfer a file to another person's computer who is in our contact list and is on the same network (wired/wireless)
 
 ## How to run the program
 
@@ -16,7 +16,7 @@ Team members: David Razmadze, Grace Chin, William Stewart
 ./secure_drop
 ```
 
-### User Registration and Login
+### User Registration (Milestone 1) and Login (Milestone 2)
 ```
 ./secure_drop 
 No users are registered with this client.
@@ -46,7 +46,7 @@ secure_drop> help
   "exit" -> Exit SecureDrop
 ```
 
-### Add and list contact
+### Adding Contacts (Milestone 3) and Listing Contacts
 ```
 secure_drop> add 
 Enter Full Name: Grace Chin
@@ -63,6 +63,16 @@ secure_drop>
 ```
 ./cleanup.sh 
 ```
+
+---
+
+## Summary of Security Features Implemented
+
+1. Password Requirements: Passwords must adhere to a password policy that ensures a certain length and level of complexity.
+2. Salted Hashes: Passwords are hashed and salted; and only the password hashes are stored in memory, not the actual passwords.
+3. Hidden Characters when Typing Passwords: When users type their passwords via stdin, no characters visibly appear on the screen.
+4. File Permissions: Files that contain confidential information are set to have the strictest possible permissions such that the program can still read and write to those files.
+5. Encryption: The contacts file is asymmetrically encrypted using AES.
 
 ---
 
