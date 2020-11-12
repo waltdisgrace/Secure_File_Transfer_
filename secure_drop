@@ -80,6 +80,7 @@ def psh_send():
     else:
         communication_manager(True)
 
+
 def execute_command(command):
     """execute commands and handle piping"""
     try:
@@ -397,6 +398,7 @@ def aesDecryptFile(file_name, key):
 
 # # # # #    8. NETWORKING    # # # # #
 
+
 def init_ip():
     global own_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -529,15 +531,10 @@ def communication_manager(switch_ports=False):
             if not p.is_alive():
                 print(p.join())
 
-                
+
 # # # # #    9. MAIN    # # # # #
 
 def main():
-
-    if len(sys.argv) > 1:
-        communication_manager()
-    else:
-        communication_manager(True)
 
     # credentials.txt is the file that contains user credientials
     touch("credentials.txt")
@@ -559,4 +556,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #    sys.exit(main())

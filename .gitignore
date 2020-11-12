@@ -4,5 +4,4 @@ credentials.txt
 contacts.txt
 contacts.bin
 
-public.pem
-private.pem
+cert.pem
