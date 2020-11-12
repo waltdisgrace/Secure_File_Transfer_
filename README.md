@@ -1,5 +1,9 @@
 # COMP 3611 Project - Secure File Transfer
 
+# Milestone 4 (Temporary place in README)
+
+<img src="https://i.ibb.co/tHs7SrJ/Project-5.jpg" alt="Project-5" border="0">
+
 Team members: David Razmadze, Grace Chin, William Stewart
 
 ## Goal: Securely transfer a file to another person's computer who is in our contact list and is on the same network (wired/wireless)
