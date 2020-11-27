@@ -11,7 +11,7 @@ import re
 import sys
 import ssl
 import socket
-import tqdm
+#import tqdm
 from time import sleep
 from multiprocessing import Process
 from socketserver import BaseRequestHandler, TCPServer
@@ -52,14 +52,12 @@ def secureDropShell():
             print(email)  # debug
             print(file_path)  # debug
 
-            # FIX THIS LATER
-            # if os.path.getsize("contacts.bin") > 0:
-            #     if not loadDataForSend("contacts.bin", email):
-            #         print("provided email address is not in your contacts list")
-            #     else:
-            #         email_valid = True
-            #         print("email correct")  # debug
-            email_valid = True
+            if os.path.getsize("contacts.bin") > 0:
+                if not isInContacts(email):
+                    print("provided email address is not in your contacts list")
+                else:
+                    email_valid = True
+                    print("email correct")  # debug
 
             if os.path.getsize(file_path) == 0:  # change criteria later?
                 print("provided file is empty")
@@ -301,6 +299,34 @@ def storeData(name, email, filename):
 
     aesEncryptFile(filename, SYMM_KEY)
 
+def isInContacts(data):
+    exists = False
+    contacts = getObjs("contacts.txt")
+    for x in contacts:
+        for y in x:
+            if(y == data):
+                exists = True
+            
+    return exists
+
+
+def getObjs(filename):
+    global SYMM_KEY
+    aesDecryptFile("contacts.bin", SYMM_KEY)
+
+    objs = []
+
+    with (open(filename, "rb")) as dbfile:
+        while True:
+            try:
+                objs.append(cPickle.load(dbfile))
+            except EOFError:
+                break
+
+    dbfile.close()
+
+    aesEncryptFile("contacts.txt", SYMM_KEY)
+    return objs
 
 def loadData(filename):
     global SYMM_KEY
@@ -477,6 +503,7 @@ class tcp_handler(BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print("Echoing message from: {}".format(self.client_address[0]))
         print(self.data)
+        print("Is in contacts?: ", isInContacts(self.data.decode("utf-8")))
         self.request.sendall("ACK from server".encode())
 
 
@@ -570,8 +597,8 @@ def send_file(file_path):
     s.send(f"{filename}{SEPARATOR}{filesize}".encode())
 
     # start sending the file
-    progress = tqdm.tqdm(range(
-        filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+    #progress = tqdm.tqdm(range(
+    #   filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     with open(filename, "rb") as f:
         for _ in progress:
             # read the bytes from the file
@@ -629,8 +656,8 @@ def receive_file():
 
     # start receiving the file from the socket
     # and writing to the file stream
-    progress = tqdm.tqdm(range(
-        filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+    #progress = tqdm.tqdm(range(
+    #    filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     with open(filename, "wb") as f:
         for _ in progress:
             # read 1024 bytes from the socket (receive)
