@@ -1,5 +1,5 @@
 #!/bin/bash
 
 # Install requirements
-cmd="rm contacts.bin contacts.txt data.txt"
+cmd="rm contacts.bin"
 eval $cmd
