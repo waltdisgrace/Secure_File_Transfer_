@@ -11,7 +11,7 @@ import re
 import sys
 import ssl
 import socket
-#import tqdm
+import tqdm
 from time import sleep
 from multiprocessing import Process
 from socketserver import BaseRequestHandler, TCPServer
@@ -299,6 +299,7 @@ def storeData(name, email, filename):
 
     aesEncryptFile(filename, SYMM_KEY)
 
+
 def isInContacts(data):
     exists = False
     contacts = getObjs("contacts.txt")
@@ -306,7 +307,7 @@ def isInContacts(data):
         for y in x:
             if(y == data):
                 exists = True
-            
+
     return exists
 
 
@@ -327,6 +328,7 @@ def getObjs(filename):
 
     aesEncryptFile("contacts.txt", SYMM_KEY)
     return objs
+
 
 def loadData(filename):
     global SYMM_KEY
@@ -597,8 +599,8 @@ def send_file(file_path):
     s.send(f"{filename}{SEPARATOR}{filesize}".encode())
 
     # start sending the file
-    #progress = tqdm.tqdm(range(
-    #   filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+    progress = tqdm.tqdm(range(
+        filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     with open(filename, "rb") as f:
         for _ in progress:
             # read the bytes from the file
@@ -654,10 +656,9 @@ def receive_file():
     # convert to integer
     filesize = int(filesize)
 
-    # start receiving the file from the socket
-    # and writing to the file stream
-    #progress = tqdm.tqdm(range(
-    #    filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+    # start receiving the file from the socket and writing to the file stream
+    progress = tqdm.tqdm(range(
+        filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     with open(filename, "wb") as f:
         for _ in progress:
             # read 1024 bytes from the socket (receive)
