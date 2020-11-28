@@ -203,7 +203,7 @@ def getPassword():
 
 
 def getHashedPassword(password):
-    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(16))
+    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12)) # CHANGE TO 16 IN FINAL PRODUCT
 
 
 def passwordMeetsRequirements(password):
@@ -305,11 +305,9 @@ def isInContacts(data):
     contacts = getObjs("contacts.txt")
     for x in contacts:
         for y in x:
-            if(y == data):
+            if x[y]["email"] == data:
                 exists = True
-
     return exists
-
 
 def getObjs(filename):
     global SYMM_KEY
@@ -504,7 +502,6 @@ class tcp_handler(BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print("Echoing message from: {}".format(self.client_address[0]))
         print(self.data)
-        print("Is in contacts?: ", isInContacts(self.data.decode("utf-8")))
         self.request.sendall("ACK from server".encode())
 
 
