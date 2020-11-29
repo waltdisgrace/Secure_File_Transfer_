@@ -204,7 +204,8 @@ def getPassword():
 
 
 def getHashedPassword(password):
-    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12)) # CHANGE TO 16 IN FINAL PRODUCT
+    # CHANGE TO 16 IN FINAL PRODUCT
+    return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12))
 
 
 def passwordMeetsRequirements(password):
@@ -309,6 +310,7 @@ def isInContacts(data):
             if x[y]["email"] == data:
                 exists = True
     return exists
+
 
 def getObjs(filename):
     global SYMM_KEY
@@ -502,13 +504,19 @@ class tcp_handler(BaseRequestHandler):
     def handle(self):
         global MSG
         self.data = self.request.recv(1024).strip()
-        print("NOW PRINTING SELF.DATA")
-        print(self.data)
+
         print("NOW PRINTING SELF.DATA DECODED")
-        print(self.data.decode("utf-8"))
-        MSG = self.data.decode("utf-8")
+        message = self.data.decode("utf-8")
+
+        print("Before setting MSG")
+        print(MSG)
+
+        print("After setting MSG")
+        MSG = message
+        print(MSG)
+
         print("Echoing message from: {}".format(self.client_address[0]))
-        #print(self.data)
+        # print(self.data)
         self.request.sendall("ACK from server".encode())
 
 
@@ -750,12 +758,12 @@ def main():
             # * Start two threads - receive_files & secureDropShell
 
             # 1. Receive files
-#            th_receive_file = Thread(target=receive_file, daemon=True)
-#            th_receive_file.start()
+            #            th_receive_file = Thread(target=receive_file, daemon=True)
+            #            th_receive_file.start()
 
             # 2. Shell - Supports add, list, send, exit, help
- #           th_secureDropShell = Thread(target=secureDropShell)
- #           th_secureDropShell.start()
+         #           th_secureDropShell = Thread(target=secureDropShell)
+         #           th_secureDropShell.start()
             secureDropShell()
 
 

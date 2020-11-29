@@ -1,8 +1,7 @@
 .vscode
 
 credentials.txt
-contacts.txt
 contacts.bin
 
 cert.pem
-test_dir
+data.csv
