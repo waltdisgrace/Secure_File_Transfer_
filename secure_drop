@@ -60,12 +60,15 @@ def secureDropShell():
                 else:
                     email_valid = True
                     print("email correct")  # debug
+            try:
+                if os.path.getsize(file_path) == 0:  # change criteria later?
+                    print("provided file is empty")
+                else:
+                    file_path_valid = True
+                    print("file correct")  # debug
 
-            if os.path.getsize(file_path) == 0:  # change criteria later?
-                print("provided file is empty")
-            else:
-                file_path_valid = True
-                print("file correct")  # debug
+            except FileNotFoundError:
+                print("provided file path does not exist")
 
             if email_valid and file_path_valid:
                 shell_send(email, file_path)
