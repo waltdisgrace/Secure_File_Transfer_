@@ -109,12 +109,12 @@ def shell_list():
 
 
 def shell_send(email, file_path):
-    print("  Sending!")
-    if len(sys.argv) > 1:
-        communication_manager()
-    else:
-        communication_manager(True)
-#    send_file(file_path)
+    # print("  Sending!")
+    # if len(sys.argv) > 1:
+    #     communication_manager()
+    # else:
+    #     communication_manager(True)
+    send_file(file_path)
 
 
 def execute_command(command):
@@ -598,7 +598,7 @@ def send_file(file_path):
 
     # * receiver IP Address and Port
     host = HOST_IP
-    port = 5001
+    port = 5002
 
     # the name of file we want to send, make sure it exists
     filename = file_path
@@ -615,23 +615,15 @@ def send_file(file_path):
     s.send(f"{filename}{SEPARATOR}{filesize}".encode())
 
     # * start sending the file
-    progress = tqdm.tqdm(range(
-        filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     with open(filename, "rb") as f:
-        for _ in progress:
-            # read the bytes from the file
-            bytes_read = f.read(BUFFER_SIZE)
-            if not bytes_read:
-                # file transmitting is done
-                break
-            # we use sendall to assure transimission in
-            # busy networks
-            s.sendall(bytes_read)
-            # update the progress bar
-            progress.update(len(bytes_read))
+        # read the bytes from the file
+        bytes_read = f.read(BUFFER_SIZE)
+        # send file
+        s.sendall(bytes_read)
+        print("File '" + filename + "' was successfully sent.")
 
     # ! WARNING: PROBABLY NEED TO CLOSE THIS
-    # s.close()
+    s.close()
 
 
 #######################################
@@ -670,23 +662,25 @@ def receive_file():
 
     # start receiving the file from the socket and writing to the file stream
     progress = tqdm.tqdm(range(
-        filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+        filesize), "...", unit="B", unit_scale=True, unit_divisor=1024)
     with open(filename, "wb") as f:
         for _ in progress:
             # read 1024 bytes from the socket (receive)
             bytes_read = client_socket.recv(BUFFER_SIZE)
+
             if not bytes_read:
-                # nothing is received
                 # file transmitting is done
                 break
+
             # write to the file the bytes we just received
             f.write(bytes_read)
-            # update the progress bar
             progress.update(len(bytes_read))
 
+        print("File '" + filename + "' was successfully received.")
+
     # ! WARNING: PROBABLY NEED TO CLOSE THIS
-    # client_socket.close()
-    # s.close()
+    client_socket.close()
+    s.close()
 
 #######################################
 #               Driver                #
@@ -761,13 +755,14 @@ def main():
             # * Start two threads - receive_files & secureDropShell
 
             # 1. Receive files
-            #            th_receive_file = Thread(target=receive_file, daemon=True)
-            #            th_receive_file.start()
+            th_receive_file = Thread(target=receive_file, daemon=True)
+            th_receive_file.start()
 
             # 2. Shell - Supports add, list, send, exit, help
-         #           th_secureDropShell = Thread(target=secureDropShell)
-         #           th_secureDropShell.start()
-            secureDropShell()
+            th_secureDropShell = Thread(target=secureDropShell)
+            th_secureDropShell.start()
+
+            # secureDropShell()
 
 
 if __name__ == "__main__":
