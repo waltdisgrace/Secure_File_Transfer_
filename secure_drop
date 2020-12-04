@@ -101,9 +101,11 @@ def shell_add():
 
 
 def shell_list():
-    print("  Listing!")
     if os.path.getsize("contacts.bin") > 0:
-        loadData("contacts.txt")
+        if len(sys.argv) > 1:
+            sendEmailRequest(9990)
+        else:
+            sendEmailRequest(9995)
     else:
         print("You have no contacts.")
 
@@ -314,6 +316,12 @@ def isInContacts(data):
                 exists = True
     return exists
 
+def getEmailFromCredentials():
+    with open("credentials.txt") as json_file:
+            data = json.load(json_file)
+            for user in data["users"]:
+                email = user["email"]
+    return email
 
 def getObjs(filename):
     global SYMM_KEY
@@ -504,6 +512,18 @@ def init_ip():
 #             TCP example             #
 #######################################
 class tcp_handler(BaseRequestHandler):
+    '''
+    def __init__(self, request, client_address, server, tcp_port):
+        self.request = request
+        self.client_address = client_address
+        self.server = server
+        self.tcp_port = tcp_port
+        self.setup()
+        try:
+            self.handle()
+        finally:
+            self.finish()
+    '''
     def handle(self):
         global MSG
         self.data = self.request.recv(1024).strip()
@@ -520,6 +540,24 @@ class tcp_handler(BaseRequestHandler):
 
         print("Echoing message from: {}".format(self.client_address[0]))
         # print(self.data)
+        print("Important stuff: ", self.server, self.request, self.client_address)
+        #self.data = self.request.recv(1024).strip()
+        #print("Echoing message from: {}".format(self.client_address[0]))
+        #print(self.data)
+        if self.data.decode("utf-8") == "Requesting Email.":
+            '''
+            if self.tcp_port == 9990:
+                sendEmail(9995)
+            elif self.tcp_port == 9995:
+                sendEmail(9990)
+            else:
+                print("Tcp_handler error!")
+            '''
+        else:
+            if isInContacts(self.data.decode("utf-8")):
+                print("Online contact: ", self.data.decode("utf-8"))
+            else:
+                print("No contacts online.")
         self.request.sendall("ACK from server".encode())
 
 
@@ -528,7 +566,9 @@ def tcp_listener(port):
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     cntx.load_cert_chain('cert.pem', 'cert.pem')
 
+    #server = TCPServer((host, port), tcp_handler(socket, (host, port), server, port))
     server = TCPServer((host, port), tcp_handler)
+
     server.socket = cntx.wrap_socket(server.socket, server_side=True)
     try:
         server.serve_forever()
@@ -548,16 +588,21 @@ def tcp_client(port, data):
 
     try:
         # Establish connection to TCP server and exchange data
-        s.connect((HOST_IP, port))
-        s.sendall(data.encode())
-        # Read data from the TCP server and close the connection
-        received = s.recv(1024)
+        result = s.connect_ex((HOST_IP, port))
+        #print("RESULT: ", result)
+        if result == 0:
+            s.sendall(data.encode())
+            # Read data from the TCP server and close the connection
+            received = s.recv(1024)
+        else:
+            print("No contacts online.")
     finally:
-        s.close()
-
+        #s.close() COMMENTED OUT FOR EXPERIMENTATION FOR TCP_HANDLER
+        return s
+    '''
     print("Bytes Sent:     {}".format(data))
     print("Bytes Received: {}".format(received.decode()))
-
+    '''
 
 #######################################
 #          Broadcast Example          #
@@ -582,7 +627,7 @@ def broadcast_sender(port):
         while True:
             msg = 'bcast_test: ' + str(count)
             count += 1
-            s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
+            #s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
             sleep(5)
     except KeyboardInterrupt:
         pass
@@ -686,7 +731,80 @@ def receive_file():
 #               Driver                #
 #######################################
 
+def establishConnection(switch_ports = False):
+    # find own ip
+    init_ip()
+    tcp_listen = 9990 if switch_ports else 9995
+    tcp_port = 9995 if switch_ports else 9990
 
+    # broadcast to other users that you exist
+    tcp_listener_worker = Process(target=tcp_listener,
+                                  name="tcp_listener_worker",
+                                  args=(tcp_listen,))
+
+    tcp_listener_worker.start()
+    print("Connection established.")
+
+    return tcp_port, tcp_listener_worker
+
+def sendEmail(tcp_port):
+    tcp_client(tcp_port, getEmailFromCredentials())
+
+def sendEmailRequest(tcp_port):
+    tcp_client(tcp_port, "Requesting Email.")
+
+def killProcesses(p):
+    if p.is_alive():
+        p.terminate()
+        print("Process terminated.")
+    if not p.is_alive():
+        p.join()
+
+def contacts_communication_manager(switch_ports=False):
+    # find own ip
+    init_ip()
+    #bcast_port = 1337 if switch_ports else 1338
+    tcp_listen = 9990 if switch_ports else 9995
+    tcp_port = 9995 if switch_ports else 9990
+
+    # broadcast to other users that you exist
+    '''
+    broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    broadcast_socket.bind(('', bcast_port))
+
+    broadcast_listener_worker = Process(target=broadcast_listener,
+                                        name="broadcast_listener_worker",
+                                        args=(broadcast_socket,))
+
+    broadcast_sender_worker = Process(target=broadcast_sender,
+                                      name="broadcast_sender_worker",
+                                      args=(bcast_port,))
+    '''
+
+    tcp_listener_worker = Process(target=tcp_listener,
+                                  name="tcp_listener_worker",
+                                  args=(tcp_listen,))
+
+    procs = [
+        #broadcast_listener_worker,
+        #broadcast_sender_worker,
+        tcp_listener_worker,
+    ]
+
+    for p in procs:
+        #print("Starting: {}".format(p.name))
+        p.start()
+        tcp_client(tcp_port, getEmailFromCredentials())
+
+    for p in procs:
+        #print("Terminating: {}".format(p.name))
+        if p.is_alive():
+            p.terminate()
+            sleep(0.1)
+        if not p.is_alive():
+            p.join()
+
+'''
 def communication_manager(switch_ports=False):
     # find own ip
     init_ip()
@@ -732,6 +850,7 @@ def communication_manager(switch_ports=False):
                 sleep(0.1)
             if not p.is_alive():
                 print(p.join())
+'''
 
 
 # # # # #    9. MAIN    # # # # #
@@ -752,8 +871,14 @@ def main():
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
         if logIn():
+            if len(sys.argv) > 1:
+                port, p = establishConnection()
+            else:
+                port, p = establishConnection(True)
+            secureDropShell()
+            killProcesses(p)
             # * Start two threads - receive_files & secureDropShell
-
+            '''
             # 1. Receive files
             th_receive_file = Thread(target=receive_file, daemon=True)
             th_receive_file.start()
@@ -761,6 +886,7 @@ def main():
             # 2. Shell - Supports add, list, send, exit, help
             th_secureDropShell = Thread(target=secureDropShell)
             th_secureDropShell.start()
+            '''
 
             # secureDropShell()
 
