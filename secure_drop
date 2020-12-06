@@ -11,7 +11,6 @@ import re
 import sys
 import ssl
 import socket
-import tqdm
 from time import sleep
 from multiprocessing import Process
 from socketserver import BaseRequestHandler, TCPServer
@@ -605,7 +604,12 @@ def send_file(file_path):
 
     # * receiver IP Address and Port
     host = HOST_IP
-    port = 5002
+    print("IMPORTANT!")
+    print(len(sys.argv))
+    if len(sys.argv) > 1:
+        port = 5001
+    else:
+        port = 5002
 
     # the name of file we want to send, make sure it exists
     filename = file_path
@@ -625,6 +629,11 @@ def send_file(file_path):
     with open(filename, "rb") as f:
         # read the bytes from the file
         bytes_read = f.read(BUFFER_SIZE)
+
+#        if not bytes_read:
+            #file transmitting is done
+#            break
+        
         # send file
         s.sendall(bytes_read)
         print("File '" + filename + "' was successfully sent.")
@@ -668,21 +677,20 @@ def receive_file():
     filesize = int(filesize)
 
     # start receiving the file from the socket and writing to the file stream
-    progress = tqdm.tqdm(range(
-        filesize), "...", unit="B", unit_scale=True, unit_divisor=1024)
+    # read 1024 bytes from the socket (receive)
+
+    # NOTE: test sending/receiving files greater than 4096 bytes large to see
+    # if it works
     with open(filename, "wb") as f:
-        for _ in progress:
-            # read 1024 bytes from the socket (receive)
-            bytes_read = client_socket.recv(BUFFER_SIZE)
+        bytes_read = client_socket.recv(BUFFER_SIZE)
 
-            if not bytes_read:
-                # file transmitting is done
-                break
+#        if not bytes_read:
+            # file transmitting is done
+#            break
 
-            # write to the file the bytes we just received
-            f.write(bytes_read)
-            progress.update(len(bytes_read))
-
+        # write to the file the bytes we just received
+        f.write(bytes_read)
+    
         print("File '" + filename + "' was successfully received.")
 
     # ! WARNING: PROBABLY NEED TO CLOSE THIS
