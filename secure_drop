@@ -316,12 +316,14 @@ def isInContacts(data):
                 exists = True
     return exists
 
+
 def getEmailFromCredentials():
     with open("credentials.txt") as json_file:
-            data = json.load(json_file)
-            for user in data["users"]:
-                email = user["email"]
+        data = json.load(json_file)
+        for user in data["users"]:
+            email = user["email"]
     return email
+
 
 def getObjs(filename):
     global SYMM_KEY
@@ -559,7 +561,7 @@ def tcp_client(port, data):
         else:
             print("No contacts online.")
     finally:
-        #s.close() COMMENTED OUT FOR EXPERIMENTATION FOR TCP_HANDLER
+        # s.close() COMMENTED OUT FOR EXPERIMENTATION FOR TCP_HANDLER
         return s
     '''
     print("Bytes Sent:     {}".format(data))
@@ -569,6 +571,8 @@ def tcp_client(port, data):
 #######################################
 #          Broadcast Example          #
 #######################################
+
+
 def broadcast_listener(socket):
     global MSG
     try:
@@ -693,7 +697,8 @@ def receive_file():
 #               Driver                #
 #######################################
 
-def establishConnection(switch_ports = False):
+
+def establishConnection(switch_ports=False):
     # find own ip
     init_ip()
     tcp_listen = 9990 if switch_ports else 9995
@@ -709,11 +714,14 @@ def establishConnection(switch_ports = False):
 
     return tcp_port, tcp_listener_worker
 
+
 def sendEmail(tcp_port):
     tcp_client(tcp_port, getEmailFromCredentials())
 
+
 def sendEmailRequest(tcp_port):
     tcp_client(tcp_port, "Requesting Email.")
+
 
 def killProcesses(p):
     if p.is_alive():
@@ -721,6 +729,7 @@ def killProcesses(p):
         print("Process terminated.")
     if not p.is_alive():
         p.join()
+
 
 def contacts_communication_manager(switch_ports=False):
     # find own ip
@@ -748,8 +757,8 @@ def contacts_communication_manager(switch_ports=False):
                                   args=(tcp_listen,))
 
     procs = [
-        #broadcast_listener_worker,
-        #broadcast_sender_worker,
+        # broadcast_listener_worker,
+        # broadcast_sender_worker,
         tcp_listener_worker,
     ]
 
@@ -765,6 +774,7 @@ def contacts_communication_manager(switch_ports=False):
             sleep(0.1)
         if not p.is_alive():
             p.join()
+
 
 '''
 def communication_manager(switch_ports=False):
