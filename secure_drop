@@ -512,52 +512,15 @@ def init_ip():
 #             TCP example             #
 #######################################
 class tcp_handler(BaseRequestHandler):
-    '''
-    def __init__(self, request, client_address, server, tcp_port):
-        self.request = request
-        self.client_address = client_address
-        self.server = server
-        self.tcp_port = tcp_port
-        self.setup()
-        try:
-            self.handle()
-        finally:
-            self.finish()
-    '''
     def handle(self):
-        global MSG
+
         self.data = self.request.recv(1024).strip()
 
-        print("NOW PRINTING SELF.DATA DECODED")
-        message = self.data.decode("utf-8")
-
-        print("Before setting MSG")
-        print(MSG)
-
-        print("After setting MSG")
-        MSG = message
-        print(MSG)
-
-        print("Echoing message from: {}".format(self.client_address[0]))
-        # print(self.data)
-        print("Important stuff: ", self.server, self.request, self.client_address)
-        #self.data = self.request.recv(1024).strip()
-        #print("Echoing message from: {}".format(self.client_address[0]))
-        #print(self.data)
-        if self.data.decode("utf-8") == "Requesting Email.":
-            '''
-            if self.tcp_port == 9990:
-                sendEmail(9995)
-            elif self.tcp_port == 9995:
-                sendEmail(9990)
-            else:
-                print("Tcp_handler error!")
-            '''
+        if isInContacts(self.data.decode("utf-8")):
+            print("Online contact: ", self.data.decode("utf-8"))
         else:
-            if isInContacts(self.data.decode("utf-8")):
-                print("Online contact: ", self.data.decode("utf-8"))
-            else:
-                print("No contacts online.")
+            print("No contacts online.")
+
         self.request.sendall("ACK from server".encode())
 
 
@@ -566,7 +529,6 @@ def tcp_listener(port):
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     cntx.load_cert_chain('cert.pem', 'cert.pem')
 
-    #server = TCPServer((host, port), tcp_handler(socket, (host, port), server, port))
     server = TCPServer((host, port), tcp_handler)
 
     server.socket = cntx.wrap_socket(server.socket, server_side=True)
