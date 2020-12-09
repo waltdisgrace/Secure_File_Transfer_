@@ -608,12 +608,7 @@ def send_file(file_path):
 
     # * receiver IP Address and Port
     host = HOST_IP
-    print("IMPORTANT!")
-    print(len(sys.argv))
-    if len(sys.argv) > 1:
-        port = 5001
-    else:
-        port = 5002
+    port = 5001
 
     # the name of file we want to send, make sure it exists
     filename = file_path
@@ -706,11 +701,11 @@ def receive_file():
 #######################################
 
 
-def establishConnection(switch_ports=False):
+def establishConnection():
     # find own ip
     init_ip()
-    tcp_listen = 9990 if switch_ports else 9995
-    tcp_port = 9995 if switch_ports else 9990
+    tcp_listen = 9990
+    tcp_port = 9995
 
     # broadcast to other users that you exist
     tcp_listener_worker = Process(target=tcp_listener,
@@ -739,12 +734,12 @@ def killProcesses(p):
         p.join()
 
 
-def contacts_communication_manager(switch_ports=False):
+def contacts_communication_manager():
     # find own ip
     init_ip()
     #bcast_port = 1337 if switch_ports else 1338
-    tcp_listen = 9990 if switch_ports else 9995
-    tcp_port = 9995 if switch_ports else 9990
+    tcp_listen = 9990
+    tcp_port = 9995
 
     # broadcast to other users that you exist
     '''
@@ -783,8 +778,7 @@ def contacts_communication_manager(switch_ports=False):
         if not p.is_alive():
             p.join()
 
-
-'''
+"""
 def communication_manager(switch_ports=False):
     # find own ip
     init_ip()
@@ -830,8 +824,7 @@ def communication_manager(switch_ports=False):
                 sleep(0.1)
             if not p.is_alive():
                 print(p.join())
-'''
-
+"""
 
 # # # # #    9. MAIN    # # # # #
 
@@ -851,10 +844,7 @@ def main():
     # prompt log in
     if query_binary("Do you want to log in (y/n)? "):
         if logIn():
-            if len(sys.argv) > 1:
-                port, p = establishConnection()
-            else:
-                port, p = establishConnection(True)
+            port, p = establishConnection()
             secureDropShell()
             killProcesses(p)
             # * Start two threads - receive_files & secureDropShell
