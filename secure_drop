@@ -562,7 +562,7 @@ def broadcast_listener(socket):
     try:
         while True:
             data = socket.recvfrom(512)
-            print(data)
+            #print(data)
     except KeyboardInterrupt:
         pass
 
@@ -838,6 +838,7 @@ def main():
             
             # 1. Start comm_manager
             th_comm_manager = Thread(target=communication_manager, daemon=True)
+
             th_comm_manager.start()
 
             # 2. Shell - Supports add, list, send, exit, help
