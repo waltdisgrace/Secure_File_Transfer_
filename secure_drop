@@ -532,8 +532,10 @@ def tcp_listener(port):
         server.shutdown()
 
 def tcp_client(port, data):
-    host_ip = "127.0.0.1"
-
+    # TODO: MAYBE CHANGE host_ip TO DOCKER CONTAINER IP
+    #host_ip = "127.0.0.1"
+    host_ip = "172.17.0.2"
+    
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -544,6 +546,7 @@ def tcp_client(port, data):
 
     try:
         # Establish connection to TCP server and exchange data
+        # TODO: FIX ERROR RELATED TO THE FOLLOWING LINE
         s.connect((host_ip, port))
         s.sendall(data.encode())
         # Read data from the TCP server and close the connection
@@ -840,10 +843,15 @@ def main():
             th_comm_manager = Thread(target=communication_manager, daemon=True)
 
             th_comm_manager.start()
-
+            th_comm_manager.join()
+            '''
+            if KeyboardInterrupt:
+                if th_comm_manager.is_alive():
+                    th_comm_manager.terminate()
+            '''
             # 2. Shell - Supports add, list, send, exit, help
-            th_secureDropShell = Thread(target=secureDropShell)
-            th_secureDropShell.start()
+            #th_secureDropShell = Thread(target=secureDropShell)
+            #th_secureDropShell.start()
 
 
 if __name__ == "__main__":
