@@ -504,7 +504,7 @@ def init_ip():
     global own_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
-    own_ip = s.getsockname()[0] 
+    own_ip = s.getsockname()[0]
     #host = "localhost"
     s.close()
 
@@ -533,11 +533,12 @@ def tcp_listener(port):
         print("listener shutting down")
         server.shutdown()
 
+
 def tcp_client(port, data):
     # TODO: MAYBE CHANGE host_ip TO DOCKER CONTAINER IP
     #host_ip = "127.0.0.1"
     host_ip = "172.17.0.2"
-    
+
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -567,7 +568,7 @@ def broadcast_listener(socket):
     try:
         while True:
             data = socket.recvfrom(512)
-            #print(data)
+            # print(data)
     except KeyboardInterrupt:
         pass
 
@@ -595,7 +596,7 @@ def send_file(file_path):
     BUFFER_SIZE = 4096  # send 4096 bytes each time step
 
     # * receiver IP Address and Port
-    host = HOST_IP_3 # hardcoded for now, get from message instead
+    host = HOST_IP_3  # hardcoded for now, get from message instead
     port = 5013
 
     # the name of file we want to send, make sure it exists
@@ -618,9 +619,9 @@ def send_file(file_path):
         bytes_read = f.read(BUFFER_SIZE)
 
 #        if not bytes_read:
-            #file transmitting is done
+        # file transmitting is done
 #            break
-        
+
         # send file
         s.sendall(bytes_read)
         print("File '" + filename + "' was successfully sent.")
@@ -672,12 +673,12 @@ def receive_file():
         bytes_read = client_socket.recv(BUFFER_SIZE)
 
 #        if not bytes_read:
-            # file transmitting is done
+        # file transmitting is done
 #            break
 
         # write to the file the bytes we just received
         f.write(bytes_read)
-    
+
         print("File '" + filename + "' was successfully received.")
 
     # ! WARNING: PROBABLY NEED TO CLOSE THIS
@@ -724,6 +725,7 @@ def killProcesses(procs):
         if not p.is_alive():
             p.join()
 
+
 def contacts_communication_manager():
     # find own ip
     init_ip()
@@ -732,7 +734,7 @@ def contacts_communication_manager():
     tcp_port = 9995
 
     # broadcast to other users that you exist
-    
+
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.bind(('', bcast_port))
 
@@ -767,13 +769,14 @@ def contacts_communication_manager():
         if not p.is_alive():
             p.join()
 
+
 def communication_manager():
 
     # find own ip
     init_ip()
-    bcast_port = 1337 #if switch_ports else 1338
-    tcp_listen = 9990 #if switch_ports else 9995
-    tcp_port = 9995 #if switch_ports else 9990
+    bcast_port = 1337  # if switch_ports else 1338
+    tcp_listen = 9990  # if switch_ports else 9995
+    tcp_port = 9995  # if switch_ports else 9990
 
     # broadcast to other users that you exist
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -816,6 +819,7 @@ def communication_manager():
 
 # # # # #    9. MAIN    # # # # #
 
+
 def main():
 
     # credentials.txt is the file that contains user credentials
@@ -833,7 +837,7 @@ def main():
     if query_binary("Do you want to log in (y/n)? "):
         if logIn():
             # Start two threads - comm_manager & secureDropShell
-            
+
             # 1. Start comm_manager
             th_comm_manager = Thread(target=communication_manager, daemon=True)
 
@@ -846,7 +850,7 @@ def main():
             '''
             # 2. Shell - Supports add, list, send, exit, help
             #th_secureDropShell = Thread(target=secureDropShell)
-            #th_secureDropShell.start()
+            # th_secureDropShell.start()
 
 
 if __name__ == "__main__":
