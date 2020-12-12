@@ -117,7 +117,8 @@ def shell_list():
 
         try:
             broadcast_listener_worker.start()
-            print("Starting ".format(broadcast_listener_worker))
+            print("Starting ".format(broadcast_listener_worker.name))
+            
         except KeyboardInterrupt:
             if broadcast_listener_worker.is_alive():
                 broadcast_listener_worker.terminate()
@@ -534,7 +535,8 @@ class tcp_handler(BaseRequestHandler):
 
 
 def tcp_listener(port):
-    host = "172.17.0.2"
+    global own_ip
+    host = own_ip
     #cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #cntx.load_cert_chain('cert.pem', 'cert.pem')
 
