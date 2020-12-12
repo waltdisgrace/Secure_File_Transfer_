@@ -107,7 +107,21 @@ def shell_add():
 
 def shell_list():
     if os.path.getsize("contacts.bin") > 0:
-        print("blah blah.")
+        broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        broadcast_socket.bind(('', 5000))
+    
+        broadcast_listener_worker = Process(target=broadcast_listener,
+                                        name="broadcast_listener_worker",
+                                        args=(broadcast_socket,))
+
+        try:
+            broadcast_listener_worker.start()
+            print("Starting ".format(broadcast_listener_worker.name))
+        except KeyboardInterrupt:
+            if broadcast_listener_worker.is_alive():
+                broadcast_listener_worker.terminate()
+            if not broadcast_listener_worker.is_alive():
+                broadcast_listener_worker.join()
     else:
         print("You have no contacts.")
 
@@ -777,12 +791,8 @@ def communication_manager():
     tcp_port = 9990 #if switch_ports else 9990
 
     # broadcast to other users that you exist
-    broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    broadcast_socket.bind(('', bcast_port))
-
-    broadcast_listener_worker = Process(target=broadcast_listener,
-                                        name="broadcast_listener_worker",
-                                        args=(broadcast_socket,))
+    #broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #broadcast_socket.bind(('', bcast_port))
 
     broadcast_sender_worker = Process(target=broadcast_sender,
                                       name="broadcast_sender_worker",
@@ -793,7 +803,7 @@ def communication_manager():
                                   args=(tcp_listen,))
 
     procs = [
-        broadcast_listener_worker,
+        #broadcast_listener_worker,
         broadcast_sender_worker,
         tcp_listener_worker,
     ]
@@ -848,7 +858,7 @@ def main():
             if KeyboardInterrupt:
                 if th_comm_manager.is_alive():
                     th_comm_manager.terminate()
-            '''
+            '''            
             # 2. Shell - Supports add, list, send, exit, help
             #th_secureDropShell = Thread(target=secureDropShell)
             # th_secureDropShell.start()
