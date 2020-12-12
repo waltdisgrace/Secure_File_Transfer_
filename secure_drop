@@ -26,7 +26,15 @@ SYMM_KEY = "stub"
 HOST_IP_2 = "172.17.0.3"
 HOST_IP_3 = "172.17.0.4"
 
-MSG = "temp"
+# TODO:
+# - Adding
+#     - Mutual adding only
+#     - Add only if both are online & certs trusting
+# - Listing
+#     - * John Doe <john.doe@gmail.com> instead of just email
+# - Sending
+# - Certificates signed by CA
+
 
 # # # # # 1. SHELL COMMANDS # # # # #
 
@@ -36,8 +44,6 @@ def secureDropShell():
         inp = input("secure_drop> ")
         if inp == "exit":
             break
-        elif inp[:3] == "cd ":
-            shell_cd(inp[3:])
         elif inp == "help":
             shell_help()
         elif inp == "add":
@@ -79,18 +85,10 @@ def secureDropShell():
                 print("provided file path does not exist")
 
             if email_valid and file_path_valid:
-                shell_send(email, file_path)
+                shell_send(file_path)
             else:
                 print("there was an error with either the email address or the file")
         '''
-
-
-def shell_cd(path):
-    """convert to absolute path and change directory"""
-    try:
-        os.chdir(os.path.abspath(path))
-    except Exception:
-        print("cd: no such file or directory: {}".format(path))
 
 
 def shell_help():
@@ -119,7 +117,7 @@ def shell_list():
                                             args=(broadcast_socket, q, ))
         broadcast_listener_worker.start()
         receivedEmails = []
-        print("Online contacts: ")
+        print("The following contacts are online:")
 
         temp = 5
         
@@ -130,38 +128,37 @@ def shell_list():
             
             if isInContacts(email) and email not in receivedEmails:
                 receivedEmails.append(email)
-                print(email)
+                print("* " + "<" + email + ">")
 
             temp = temp - 1
-            print(temp)
+            #print(temp) #debug
 
-        #broadcast_listener_worker.join()
-        print("Terminating: {}".format(broadcast_listener_worker.name))
+        #broadcast_listener_worker.join() #TODO: do we need this?
+        #print("Terminating: {}".format(broadcast_listener_worker.name)) #debug
         broadcast_listener_worker.terminate()
-        print("Terminated")
+        #print("Terminated") #debug
 
-        '''
-        try:
-            # *TODO - Get broadcast_listener_worker to properly work
-            broadcast_listener_worker.start()
-            print("Starting ".format(broadcast_listener_worker.name))
-
-        except KeyboardInterrupt:
-            if broadcast_listener_worker.is_alive():
-                broadcast_listener_worker.terminate()
-            if not broadcast_listener_worker.is_alive():
-                broadcast_listener_worker.join()
-        '''
     else:
         print("You have no contacts.")
 
 
-#def shell_send(email, file_path):
-def shell_send():
-    # send_file(file_path)
+#def shell_send(file_path):
+def shell_send(): #debug
     tcp_client(9990, input())
 
+    # Broadcast sender's ID
+    broadcast_sender_worker_for_files = Process(target=broadcast_sender,
+                                                name="broadcast_sender_worker",
+                                                args=(bcast_port,True,))
 
+    # Receive receiver's ID
+
+    
+    # Establish (encrypted) TLS connection
+    # Confidentiality, integrity, authentication
+
+    # Send the file over the encrypted connection
+    
 def execute_command(command):
     """execute commands and handle piping"""
     try:
@@ -204,9 +201,13 @@ def execute_command(command):
         else:
             subprocess.run(command.split(" "))
     except Exception:
-        print("psh: command not found: {}".format(command))
+        print("Command not found: {}. Type `help` to view valid commands.".format(command))
 
-# # # # # 2. Credentials # # # # #
+
+############################################################
+#          MILESTONE 1: USER REGISTRATION                  #
+############################################################        
+# # # # # 2. Credentials (MS 1-2) # # # # #
 
 
 def getEmail():
@@ -229,7 +230,8 @@ def getName():
         name = input("Enter Full Name: ")
     return name
 
-# # # # # 3. Password # # # # #
+
+# # # # # 2.1 Credentials - Password (MS 1-2) # # # # #
 
 
 def setPassword():
@@ -252,7 +254,7 @@ def getPassword():
 
 
 def getHashedPassword(password):
-    # CHANGE TO 16 IN FINAL PRODUCT
+    # TODO: CHANGE TO 16 IN FINAL PRODUCT
     return bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt(12))
 
 
@@ -274,9 +276,9 @@ def checkPassword(password, hashed_password):
         return False
     return bcrypt.checkpw(password.encode("utf8"), hashed_password.encode("utf8"))
 
-
-# # # # # 4. Logging In # # # # #
-
+#####################################################
+#          MILESTONE 2: USER LOGIN                  #
+#####################################################
 
 def logIn():
     global SYMM_KEY
@@ -325,8 +327,38 @@ def storeUserInfo(name, email, password):
     data["users"].append(user_dict)
     return data
 
-# # # # # 5. Database # # # # #
+#####################################################
+#          MILESTONE 3: ADDING CONTACTS             #
+#####################################################
 
+# # # # # 7. Encryption # # # # #
+
+def aesEncryptFile(file_name, key):
+    cipher = AES.new(key, AES.MODE_EAX)
+    data = open(file_name, 'rb').read()
+    ciphertext, tag = cipher.encrypt_and_digest(data)
+
+    file_name = file_name.replace(".txt", "")
+    file_name += ".bin"
+    file_out = open(file_name, "wb")
+    [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
+    file_out.close()
+    chmod(file_name, 0o600)
+    os.remove("contacts.txt")
+
+
+def aesDecryptFile(file_name, key):
+    file_in = open(file_name, "rb")
+    nonce, tag, ciphertext = [file_in.read(x) for x in (16, 16, -1)]
+    cipher = AES.new(key, AES.MODE_EAX, nonce)
+    file_name = file_name.replace(".bin", "")
+    file_name += ".txt"
+    file_out = open(file_name, "wb")
+    file_out.write(cipher.decrypt_and_verify(ciphertext, tag))
+    chmod(file_name, 0o600)
+    return file_name
+
+# # # # # 4. Database # # # # #
 
 def storeData(name, email, filename):
     global SYMM_KEY
@@ -473,7 +505,7 @@ def printDataFile():
             print("Password: " + u["password"])
 
 
-# # # # # 6. Helper Functions # # # # #
+# # # # # 6. CLI # # # # #
 
 def query_binary(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
@@ -488,11 +520,11 @@ def query_binary(question, default="yes"):
     valid = {"yes": True, "y": True, "ye": True,
              "no": False, "n": False}
     if default is None:
-        prompt = " [y/n] "
+        prompt = " (y/n)? "
     elif default == "yes":
-        prompt = " [Y/n] "
+        prompt = " (Y/n)? "
     elif default == "no":
-        prompt = " [y/N] "
+        prompt = " (y/N)? "
     else:
         raise ValueError("invalid default answer: '%s'" % default)
 
@@ -515,32 +547,6 @@ def touch(fname):
         open(fname, 'a').close()
 
 
-# # # # # 7. Encryption # # # # #
-
-def aesEncryptFile(file_name, key):
-    cipher = AES.new(key, AES.MODE_EAX)
-    data = open(file_name, 'rb').read()
-    ciphertext, tag = cipher.encrypt_and_digest(data)
-
-    file_name = file_name.replace(".txt", "")
-    file_name += ".bin"
-    file_out = open(file_name, "wb")
-    [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
-    file_out.close()
-    chmod(file_name, 0o600)
-    os.remove("contacts.txt")
-
-
-def aesDecryptFile(file_name, key):
-    file_in = open(file_name, "rb")
-    nonce, tag, ciphertext = [file_in.read(x) for x in (16, 16, -1)]
-    cipher = AES.new(key, AES.MODE_EAX, nonce)
-    file_name = file_name.replace(".bin", "")
-    file_name += ".txt"
-    file_out = open(file_name, "wb")
-    file_out.write(cipher.decrypt_and_verify(ciphertext, tag))
-    chmod(file_name, 0o600)
-    return file_name
 
 
 def init_ip():
@@ -552,9 +558,10 @@ def init_ip():
     s.close()
 
 
-#######################################
-#             TCP example             #
-#######################################
+######################################################
+#          MILESTONE 4: LISTING CONTACTS             #
+######################################################
+
 class tcp_handler(BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
@@ -617,65 +624,42 @@ def broadcast_listener(socket, q):
             data = socket.recvfrom(512)
             #print(data)
             q.put(data)
+
+            # Received a send request, 
+            if data[2]:
+                print("Contact ' <>' is sending a file. Accept")
+                
     except KeyboardInterrupt:
         pass
 
 
-def broadcast_sender(port):
+def broadcast_sender(port, is_for_files=False):
     count = 0
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while True:
             msg = getEmailFromCredentials()
-            s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
+            #The third tuple element is a boolean that indicates whether or
+            #not the sender is attempting to send a file.
+            #TODO: Hash the ID's if we have time
+            s.sendto(msg.encode('ascii'), ('255.255.255.255', port), is_for_files)
             sleep(5)
     except KeyboardInterrupt:
         pass
 
-#######################################
-#             Send File               #
-#######################################
-
+##########################################################
+#        Milestone 5: Secure File Transfer               #
+##########################################################
 
 def send_file(file_path):
-    SEPARATOR = "<SEPARATOR>"
-    BUFFER_SIZE = 4096  # send 4096 bytes each time step
 
-    # * receiver IP Address and Port
-    host = HOST_IP
-    print("IMPORTANT!")
-    print(len(sys.argv))
-    if len(sys.argv) > 1:
-        port = 5001
-    else:
-        port = 5002
-
-    # the name of file we want to send, make sure it exists
-    filename = file_path
-    filesize = os.path.getsize(filename)
-
-    # create the client socket
-    s = socket.socket()
-
-    print(f"[+] Connecting to {host}:{port}")
-    s.connect((host, port))
-    print("[+] Connected.")
-
-    # send the filename and filesize
-    s.send(f"{filename}{SEPARATOR}{filesize}".encode())
-
-    # * start sending the file
-    with open(filename, "rb") as f:
-        # read the bytes from the file
-        bytes_read = f.read(BUFFER_SIZE)
-
-        # send file
-        s.sendall(bytes_read)
-        print("File '" + filename + "' was successfully sent.")
-
-    # ! WARNING: PROBABLY NEED TO CLOSE THIS
-    s.close()
+    #Convert the file in the file path to a bytes object
+    with open(file_path, 'rb') as f:
+        contents = f.read()
+        
+        #Send it to the port via tcp_client
+        tcp_client(9990, contents, '172.17.0.4')
 
 
 #######################################
@@ -794,7 +778,15 @@ def communication_manager():
 
 
 def main():
-
+    try:
+        _create_unverified_https_context = ssl._create_unverified_context
+    except AttributeError:
+        # Legacy Python that doesn't verify HTTPS certificates by default
+        pass
+    else:
+        # Handle target environment that doesn't support HTTPS verification
+        ssl._create_default_https_context = _create_unverified_https_context
+    
     # credentials.txt is the file that contains user credentials
     touch("credentials.txt")
     chmod("credentials.txt", 0o600)
@@ -803,11 +795,11 @@ def main():
     if os.path.getsize("credentials.txt") == 0:
         print("No users are registered with this client.")
 
-    if query_binary("Do you want to register a new user (y/n)? "):
+    if query_binary("Do you want to register a new user"):
         registerNewUser()
 
     # prompt log in
-    if query_binary("Do you want to log in (y/n)? "):
+    if query_binary("Do you want to log in"):
         if logIn():
             # Start two threads - comm_manager & secureDropShell
             # 1. Start comm_manager
