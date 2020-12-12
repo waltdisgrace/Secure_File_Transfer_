@@ -82,7 +82,8 @@ def secureDropShell():
             else:
                 print("there was an error with either the email address or the file")
         '''
-        
+
+
 def shell_cd(path):
     """convert to absolute path and change directory"""
     try:
@@ -109,10 +110,10 @@ def shell_list():
     if os.path.getsize("contacts.bin") > 0:
         broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         broadcast_socket.bind(('', 5000))
-    
+
         broadcast_listener_worker = Process(target=broadcast_listener,
-                                        name="broadcast_listener_worker",
-                                        args=(broadcast_socket,))
+                                            name="broadcast_listener_worker",
+                                            args=(broadcast_socket,))
 
         try:
             broadcast_listener_worker.start()
@@ -127,8 +128,9 @@ def shell_list():
 
 
 def shell_send(email, file_path):
-    #send_file(file_path)
+    # send_file(file_path)
     tcp_client(9990, input())
+
 
 def execute_command(command):
     """execute commands and handle piping"""
@@ -510,11 +512,12 @@ def aesDecryptFile(file_name, key):
     chmod(file_name, 0o600)
     return file_name
 
+
 def init_ip():
     global own_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
-    own_ip = s.getsockname()[0] 
+    own_ip = s.getsockname()[0]
     #host = "localhost"
     s.close()
 
@@ -543,16 +546,17 @@ def tcp_listener(port):
         print("listener shutting down")
         server.shutdown()
 
+
 def tcp_client(port, data):
     # TODO: MAYBE CHANGE host_ip TO DOCKER CONTAINER IP
     #host_ip = "127.0.0.1"
     host_ip = "172.17.0.3"
-    
+
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    #cntx.load_verify_locations('cert.pem')
-    #cntx.load_cert_chain('cert.pem')
+    # cntx.load_verify_locations('cert.pem')
+    # cntx.load_cert_chain('cert.pem')
 
     #s = cntx.wrap_socket(s, server_hostname='test.server')
 
@@ -632,9 +636,9 @@ def send_file(file_path):
         bytes_read = f.read(BUFFER_SIZE)
 
 #        if not bytes_read:
-            #file transmitting is done
+        # file transmitting is done
 #            break
-        
+
         # send file
         s.sendall(bytes_read)
         print("File '" + filename + "' was successfully sent.")
@@ -686,12 +690,12 @@ def receive_file():
         bytes_read = client_socket.recv(BUFFER_SIZE)
 
 #        if not bytes_read:
-            # file transmitting is done
+        # file transmitting is done
 #            break
 
         # write to the file the bytes we just received
         f.write(bytes_read)
-    
+
         print("File '" + filename + "' was successfully received.")
 
     # ! WARNING: PROBABLY NEED TO CLOSE THIS
@@ -706,8 +710,8 @@ def receive_file():
 def establishConnection():
     # find own ip
     init_ip()
-    tcp_listen = 9990 #if switch_ports else 9995
-    tcp_port = 9995 #if switch_ports else 9990
+    tcp_listen = 9990  # if switch_ports else 9995
+    tcp_port = 9995  # if switch_ports else 9990
 
     # broadcast to other users that you exist
     tcp_listener_worker = Process(target=tcp_listener,
@@ -736,6 +740,7 @@ def killProcesses(procs):
             sleep(0.1)
         if not p.is_alive():
             p.join()
+
 
 '''
 def contacts_communication_manager(switch_ports=False):
@@ -783,12 +788,14 @@ def contacts_communication_manager(switch_ports=False):
 
 
 '''
+
+
 def communication_manager():
     # find own ip
     init_ip()
-    bcast_port = 1337 #if switch_ports else 1338
-    tcp_listen = 9990 #if switch_ports else 9995
-    tcp_port = 9990 #if switch_ports else 9990
+    bcast_port = 1337  # if switch_ports else 1338
+    tcp_listen = 9990  # if switch_ports else 9995
+    tcp_port = 9990  # if switch_ports else 9990
 
     # broadcast to other users that you exist
     #broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -803,7 +810,7 @@ def communication_manager():
                                   args=(tcp_listen,))
 
     procs = [
-        #broadcast_listener_worker,
+        # broadcast_listener_worker,
         broadcast_sender_worker,
         tcp_listener_worker,
     ]
@@ -852,13 +859,13 @@ def main():
 
             th_comm_manager.start()
             th_comm_manager.join()
-            #th_comm_manager.join()
-            
+            # th_comm_manager.join()
+
             '''
             if KeyboardInterrupt:
                 if th_comm_manager.is_alive():
                     th_comm_manager.terminate()
-            '''            
+            '''
             # 2. Shell - Supports add, list, send, exit, help
             #th_secureDropShell = Thread(target=secureDropShell)
             # th_secureDropShell.start()
