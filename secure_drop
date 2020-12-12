@@ -119,7 +119,8 @@ def shell_list():
         broadcast_listener_worker.start()
 
         while broadcast_listener_worker.is_alive():
-            print(q.get())
+            print(q.get()[0].decode("utf-8"))
+            #if q.get().decode("utf-8") 
         broadcast_listener_worker.join()
 
         '''
@@ -605,7 +606,7 @@ def broadcast_sender(port):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while True:
-            msg = 'Broadcast from SecureDrop User: ' + getEmailFromCredentials()
+            msg = getEmailFromCredentials()
             s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
             sleep(5)
     except KeyboardInterrupt:
