@@ -116,9 +116,10 @@ def shell_list():
                                             args=(broadcast_socket,))
 
         try:
+            # *TODO - Get broadcast_listener_worker to properly work
             broadcast_listener_worker.start()
             print("Starting ".format(broadcast_listener_worker.name))
-            
+
         except KeyboardInterrupt:
             if broadcast_listener_worker.is_alive():
                 broadcast_listener_worker.terminate()
