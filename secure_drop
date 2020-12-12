@@ -50,11 +50,6 @@ def secureDropShell():
             shell_add()
         elif inp == "list":
             shell_list()
-        elif inp == "send":
-            shell_send()
-        else:
-            execute_command(inp)
-        '''
         elif inp[:5] == "send ":
             words = inp.split()
 
@@ -88,8 +83,8 @@ def secureDropShell():
                 shell_send(file_path)
             else:
                 print("there was an error with either the email address or the file")
-        '''
-
+        else:
+            execute_command(inp)
 
 def shell_help():
     print('  "add"  -> Add a new contact')
@@ -141,16 +136,14 @@ def shell_list():
     else:
         print("You have no contacts.")
 
-
-#def shell_send(file_path):
-def shell_send(): #debug
-    tcp_client(9990, input())
-
+def shell_send(file_path):
+    send_file("credentials.txt")
     # Broadcast sender's ID
+    '''
     broadcast_sender_worker_for_files = Process(target=broadcast_sender,
                                                 name="broadcast_sender_worker",
                                                 args=(bcast_port,True,))
-
+    '''
     # Receive receiver's ID
 
     
@@ -572,7 +565,7 @@ class tcp_handler(BaseRequestHandler):
             if isInContacts(self.data.decode("utf-8")):
                 print("")
         '''
-        self.request.sendall("ACK from server".encode())
+        #self.request.sendall("ACK from server".encode())
 
 
 def tcp_listener(port):
@@ -605,7 +598,7 @@ def tcp_client(port, data, target_ip):
         # Establish connection to TCP server and exchange data
         # TODO: FIX ERROR RELATED TO THE FOLLOWING LINE
         s.connect((target_ip, port))
-        s.sendall(data.encode())
+        s.sendall(data)
         # Read data from the TCP server and close the connection
         received = s.recv(1024)
     finally:
@@ -639,11 +632,11 @@ def broadcast_sender(port, is_for_files=False):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while True:
-            msg = getEmailFromCredentials()
+            msg = getEmailFromCredentials() + " " + str(is_for_files)
             #The third tuple element is a boolean that indicates whether or
             #not the sender is attempting to send a file.
             #TODO: Hash the ID's if we have time
-            s.sendto(msg.encode('ascii'), ('255.255.255.255', port), is_for_files)
+            s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
             sleep(5)
     except KeyboardInterrupt:
         pass
@@ -656,10 +649,11 @@ def send_file(file_path):
 
     #Convert the file in the file path to a bytes object
     with open(file_path, 'rb') as f:
+        # TODO: Maybe add buffer size as arg to read()
         contents = f.read()
         
         #Send it to the port via tcp_client
-        tcp_client(9990, contents, '172.17.0.4')
+        tcp_client(9990, contents, '172.17.0.3')
 
 
 #######################################
