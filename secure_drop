@@ -117,7 +117,7 @@ def shell_list():
 
         try:
             broadcast_listener_worker.start()
-            print("Starting ".format(broadcast_listener_worker.name))
+            print("Starting ".format(broadcast_listener_worker))
         except KeyboardInterrupt:
             if broadcast_listener_worker.is_alive():
                 broadcast_listener_worker.terminate()
@@ -635,10 +635,6 @@ def send_file(file_path):
         # read the bytes from the file
         bytes_read = f.read(BUFFER_SIZE)
 
-#        if not bytes_read:
-        # file transmitting is done
-#            break
-
         # send file
         s.sendall(bytes_read)
         print("File '" + filename + "' was successfully sent.")
@@ -689,10 +685,6 @@ def receive_file():
     with open(filename, "wb") as f:
         bytes_read = client_socket.recv(BUFFER_SIZE)
 
-#        if not bytes_read:
-        # file transmitting is done
-#            break
-
         # write to the file the bytes we just received
         f.write(bytes_read)
 
@@ -742,54 +734,6 @@ def killProcesses(procs):
             p.join()
 
 
-'''
-def contacts_communication_manager(switch_ports=False):
-    # find own ip
-    init_ip()
-    #bcast_port = 1337 if switch_ports else 1338
-    tcp_listen = 9990 if switch_ports else 9995
-    tcp_port = 9995 if switch_ports else 9990
-
-    # broadcast to other users that you exist
-    
-    broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    broadcast_socket.bind(('', bcast_port))
-
-    broadcast_listener_worker = Process(target=broadcast_listener,
-                                        name="broadcast_listener_worker",
-                                        args=(broadcast_socket,))
-
-    broadcast_sender_worker = Process(target=broadcast_sender,
-                                      name="broadcast_sender_worker",
-                                      args=(bcast_port,))
-
-    tcp_listener_worker = Process(target=tcp_listener,
-                                  name="tcp_listener_worker",
-                                  args=(tcp_listen,))
-
-    procs = [
-        # broadcast_listener_worker,
-        # broadcast_sender_worker,
-        tcp_listener_worker,
-    ]
-
-    for p in procs:
-        #print("Starting: {}".format(p.name))
-        p.start()
-        tcp_client(tcp_port, getEmailFromCredentials())
-
-    for p in procs:
-        #print("Terminating: {}".format(p.name))
-        if p.is_alive():
-            p.terminate()
-            sleep(0.1)
-        if not p.is_alive():
-            p.join()
-
-
-'''
-
-
 def communication_manager():
     # find own ip
     init_ip()
@@ -834,8 +778,8 @@ def communication_manager():
             if not p.is_alive():
                 print(p.join())
 
-
 # # # # #    9. MAIN    # # # # #
+
 
 def main():
 
