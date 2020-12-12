@@ -24,6 +24,7 @@ SYMM_KEY = "stub"
 #HOST_IP_1 = "127.0.0.2"
 HOST_IP_2 = "172.17.0.3"
 HOST_IP_3 = "172.17.0.4"
+
 MSG = "temp"
 
 # # # # # 1. SHELL COMMANDS # # # # #
@@ -42,6 +43,11 @@ def secureDropShell():
             shell_add()
         elif inp == "list":
             shell_list()
+        elif inp == "send":
+            shell_send()
+        else:
+            execute_command(inp)
+        '''
         elif inp[:5] == "send ":
             words = inp.split()
 
@@ -75,10 +81,8 @@ def secureDropShell():
                 shell_send(email, file_path)
             else:
                 print("there was an error with either the email address or the file")
-        else:
-            execute_command(inp)
-
-
+        '''
+        
 def shell_cd(path):
     """convert to absolute path and change directory"""
     try:
@@ -109,13 +113,8 @@ def shell_list():
 
 
 def shell_send(email, file_path):
-    # print("  Sending!")
-    # if len(sys.argv) > 1:
-    #     communication_manager()
-    # else:
-    #     communication_manager(True)
-    send_file(file_path)
-
+    #send_file(file_path)
+    tcp_client(9990, input())
 
 def execute_command(command):
     """execute commands and handle piping"""
@@ -497,14 +496,11 @@ def aesDecryptFile(file_name, key):
     chmod(file_name, 0o600)
     return file_name
 
-# # # # #    8. NETWORKING    # # # # #
-
-
 def init_ip():
     global own_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
-    own_ip = s.getsockname()[0]
+    own_ip = s.getsockname()[0] 
     #host = "localhost"
     s.close()
 
@@ -521,31 +517,30 @@ class tcp_handler(BaseRequestHandler):
 
 
 def tcp_listener(port):
-    host = "localhost"
-    cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    cntx.load_cert_chain('cert.pem', 'cert.pem')
+    host = "172.17.0.2"
+    #cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    #cntx.load_cert_chain('cert.pem', 'cert.pem')
 
     server = TCPServer((host, port), tcp_handler)
-    server.socket = cntx.wrap_socket(server.socket, server_side=True)
+    #server.socket = cntx.wrap_socket(server.socket, server_side=True)
     try:
         server.serve_forever()
     except:
         print("listener shutting down")
         server.shutdown()
 
-
 def tcp_client(port, data):
     # TODO: MAYBE CHANGE host_ip TO DOCKER CONTAINER IP
     #host_ip = "127.0.0.1"
-    host_ip = "172.17.0.2"
-
+    host_ip = "172.17.0.3"
+    
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    cntx.load_verify_locations('cert.pem')
-    cntx.load_cert_chain('cert.pem')
+    #cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    #cntx.load_verify_locations('cert.pem')
+    #cntx.load_cert_chain('cert.pem')
 
-    s = cntx.wrap_socket(s, server_hostname='test.server')
+    #s = cntx.wrap_socket(s, server_hostname='test.server')
 
     try:
         # Establish connection to TCP server and exchange data
@@ -568,7 +563,7 @@ def broadcast_listener(socket):
     try:
         while True:
             data = socket.recvfrom(512)
-            # print(data)
+            print(data)
     except KeyboardInterrupt:
         pass
 
@@ -579,8 +574,7 @@ def broadcast_sender(port):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while True:
-            msg = 'bcast_test: ' + str(count)
-            count += 1
+            msg = 'Broadcast from SecureDrop User: ' + getEmailFromCredentials()
             s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
             sleep(5)
     except KeyboardInterrupt:
@@ -596,8 +590,13 @@ def send_file(file_path):
     BUFFER_SIZE = 4096  # send 4096 bytes each time step
 
     # * receiver IP Address and Port
-    host = HOST_IP_3  # hardcoded for now, get from message instead
-    port = 5013
+    host = HOST_IP
+    print("IMPORTANT!")
+    print(len(sys.argv))
+    if len(sys.argv) > 1:
+        port = 5001
+    else:
+        port = 5002
 
     # the name of file we want to send, make sure it exists
     filename = file_path
@@ -619,9 +618,9 @@ def send_file(file_path):
         bytes_read = f.read(BUFFER_SIZE)
 
 #        if not bytes_read:
-        # file transmitting is done
+            #file transmitting is done
 #            break
-
+        
         # send file
         s.sendall(bytes_read)
         print("File '" + filename + "' was successfully sent.")
@@ -635,8 +634,8 @@ def send_file(file_path):
 #######################################
 def receive_file():
     # device's IP address
-    SERVER_HOST = HOST_IP_2
-    SERVER_PORT = 5013
+    SERVER_HOST = HOST_IP
+    SERVER_PORT = 5001
     BUFFER_SIZE = 4096  # receive 4096 bytes each time
     SEPARATOR = "<SEPARATOR>"
 
@@ -673,12 +672,12 @@ def receive_file():
         bytes_read = client_socket.recv(BUFFER_SIZE)
 
 #        if not bytes_read:
-        # file transmitting is done
+            # file transmitting is done
 #            break
 
         # write to the file the bytes we just received
         f.write(bytes_read)
-
+    
         print("File '" + filename + "' was successfully received.")
 
     # ! WARNING: PROBABLY NEED TO CLOSE THIS
@@ -693,9 +692,8 @@ def receive_file():
 def establishConnection():
     # find own ip
     init_ip()
-
-    tcp_listen = 9990
-    tcp_port = 9995
+    tcp_listen = 9990 #if switch_ports else 9995
+    tcp_port = 9995 #if switch_ports else 9990
 
     # broadcast to other users that you exist
     tcp_listener_worker = Process(target=tcp_listener,
@@ -725,16 +723,16 @@ def killProcesses(procs):
         if not p.is_alive():
             p.join()
 
-
-def contacts_communication_manager():
+'''
+def contacts_communication_manager(switch_ports=False):
     # find own ip
     init_ip()
     #bcast_port = 1337 if switch_ports else 1338
-    tcp_listen = 9990
-    tcp_port = 9995
+    tcp_listen = 9990 if switch_ports else 9995
+    tcp_port = 9995 if switch_ports else 9990
 
     # broadcast to other users that you exist
-
+    
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.bind(('', bcast_port))
 
@@ -770,13 +768,13 @@ def contacts_communication_manager():
             p.join()
 
 
+'''
 def communication_manager():
-
     # find own ip
     init_ip()
-    bcast_port = 1337  # if switch_ports else 1338
-    tcp_listen = 9990  # if switch_ports else 9995
-    tcp_port = 9995  # if switch_ports else 9990
+    bcast_port = 1337 #if switch_ports else 1338
+    tcp_listen = 9990 #if switch_ports else 9995
+    tcp_port = 9990 #if switch_ports else 9990
 
     # broadcast to other users that you exist
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -804,9 +802,11 @@ def communication_manager():
         for p in procs:
             #print("Starting: {}".format(p.name))
             p.start()
+        '''
         while True:
             tcp_client(tcp_port, input())
             sleep(1)
+        '''
 
     except KeyboardInterrupt:
         for p in procs:
@@ -817,8 +817,8 @@ def communication_manager():
             if not p.is_alive():
                 print(p.join())
 
-# # # # #    9. MAIN    # # # # #
 
+# # # # #    9. MAIN    # # # # #
 
 def main():
 
@@ -837,12 +837,13 @@ def main():
     if query_binary("Do you want to log in (y/n)? "):
         if logIn():
             # Start two threads - comm_manager & secureDropShell
-
             # 1. Start comm_manager
             th_comm_manager = Thread(target=communication_manager, daemon=True)
 
             th_comm_manager.start()
             th_comm_manager.join()
+            #th_comm_manager.join()
+            
             '''
             if KeyboardInterrupt:
                 if th_comm_manager.is_alive():
@@ -851,6 +852,8 @@ def main():
             # 2. Shell - Supports add, list, send, exit, help
             #th_secureDropShell = Thread(target=secureDropShell)
             # th_secureDropShell.start()
+            th_secureDropShell = Thread(target=secureDropShell)
+            th_secureDropShell.start()
 
 
 if __name__ == "__main__":
