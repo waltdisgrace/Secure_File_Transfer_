@@ -120,7 +120,10 @@ def shell_list():
         broadcast_listener_worker.start()
         receivedEmails = []
         print("Online contacts: ")
-        while broadcast_listener_worker.is_alive():
+
+        temp = 5
+        
+        while broadcast_listener_worker.is_alive() and temp != 0:
             data = q.get()
             email = data[0].decode("utf-8")
             ip_addr = data[1][0]
@@ -128,6 +131,10 @@ def shell_list():
             if isInContacts(email) and email not in receivedEmails:
                 receivedEmails.append(email)
                 print(email)
+
+            temp = temp - 1
+            print(temp)
+
         #broadcast_listener_worker.join()
         print("Terminating: {}".format(broadcast_listener_worker.name))
         broadcast_listener_worker.terminate()
@@ -149,7 +156,8 @@ def shell_list():
         print("You have no contacts.")
 
 
-def shell_send(email, file_path):
+#def shell_send(email, file_path):
+def shell_send():
     # send_file(file_path)
     tcp_client(9990, input())
 
@@ -563,11 +571,11 @@ class tcp_handler(BaseRequestHandler):
 def tcp_listener(port):
     global own_ip
     host = own_ip
-    #cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    #cntx.load_cert_chain('cert.pem', 'cert.pem')
+    cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    cntx.load_cert_chain('cert.pem', 'cert.pem')
 
     server = TCPServer((host, port), tcp_handler)
-    #server.socket = cntx.wrap_socket(server.socket, server_side=True)
+    server.socket = cntx.wrap_socket(server.socket, server_side=True)
     try:
         server.serve_forever()
     except:
@@ -580,11 +588,11 @@ def tcp_client(port, data, target_ip):
     #host_ip = "127.0.0.1"
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    # cntx.load_verify_locations('cert.pem')
-    # cntx.load_cert_chain('cert.pem')
+    cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    cntx.load_verify_locations('cert.pem')
+    cntx.load_cert_chain('cert.pem')
 
-    #s = cntx.wrap_socket(s, server_hostname='test.server')
+    s = cntx.wrap_socket(s, server_hostname='test.server')
 
     try:
         # Establish connection to TCP server and exchange data
@@ -767,11 +775,11 @@ def communication_manager():
         for p in procs:
             #print("Starting: {}".format(p.name))
             p.start()
-        '''
-        while True:
-            tcp_client(tcp_port, input())
-            sleep(1)
-        '''
+        
+        #while True:
+            #tcp_client(tcp_port, input(), '172.17.0.4')
+            #sleep(1)
+        
 
     except KeyboardInterrupt:
         for p in procs:
