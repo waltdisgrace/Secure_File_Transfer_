@@ -1,4 +1,4 @@
 bcrypt
 email_validator
 pycryptodome
-tqdm 
+certauth
