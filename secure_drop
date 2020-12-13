@@ -120,45 +120,45 @@ def shell_list():
         print("The following contacts are online:")
 
         temp = 5
-        
+
         while broadcast_listener_worker.is_alive() and temp != 0:
             data = q.get()
             email = data[0].decode("utf-8")
             ip_addr = data[1][0]
-            
+
             if isInContacts(email) and email not in receivedEmails:
                 receivedEmails.append(email)
                 print("* " + "<" + email + ">")
 
             temp = temp - 1
-            #print(temp) #debug
+            # print(temp) #debug
 
-        #broadcast_listener_worker.join() #TODO: do we need this?
-        #print("Terminating: {}".format(broadcast_listener_worker.name)) #debug
+        # broadcast_listener_worker.join() #TODO: do we need this?
+        # print("Terminating: {}".format(broadcast_listener_worker.name)) #debug
         broadcast_listener_worker.terminate()
-        #print("Terminated") #debug
+        # print("Terminated") #debug
 
     else:
         print("You have no contacts.")
 
 
-#def shell_send(file_path):
-def shell_send(): #debug
+# def shell_send(file_path):
+def shell_send():  # debug
     tcp_client(9990, input())
 
     # Broadcast sender's ID
     broadcast_sender_worker_for_files = Process(target=broadcast_sender,
                                                 name="broadcast_sender_worker",
-                                                args=(bcast_port,True,))
+                                                args=(bcast_port, True,))
 
     # Receive receiver's ID
 
-    
     # Establish (encrypted) TLS connection
     # Confidentiality, integrity, authentication
 
     # Send the file over the encrypted connection
-    
+
+
 def execute_command(command):
     """execute commands and handle piping"""
     try:
@@ -206,7 +206,7 @@ def execute_command(command):
 
 ############################################################
 #          MILESTONE 1: USER REGISTRATION                  #
-############################################################        
+############################################################
 # # # # # 2. Credentials (MS 1-2) # # # # #
 
 
@@ -280,6 +280,7 @@ def checkPassword(password, hashed_password):
 #          MILESTONE 2: USER LOGIN                  #
 #####################################################
 
+
 def logIn():
     global SYMM_KEY
     successful = False
@@ -333,6 +334,7 @@ def storeUserInfo(name, email, password):
 
 # # # # # 7. Encryption # # # # #
 
+
 def aesEncryptFile(file_name, key):
     cipher = AES.new(key, AES.MODE_EAX)
     data = open(file_name, 'rb').read()
@@ -359,6 +361,7 @@ def aesDecryptFile(file_name, key):
     return file_name
 
 # # # # # 4. Database # # # # #
+
 
 def storeData(name, email, filename):
     global SYMM_KEY
@@ -547,8 +550,6 @@ def touch(fname):
         open(fname, 'a').close()
 
 
-
-
 def init_ip():
     global own_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -622,13 +623,13 @@ def broadcast_listener(socket, q):
     try:
         while True:
             data = socket.recvfrom(512)
-            #print(data)
+            # print(data)
             q.put(data)
 
-            # Received a send request, 
+            # Received a send request,
             if data[2]:
                 print("Contact ' <>' is sending a file. Accept")
-                
+
     except KeyboardInterrupt:
         pass
 
@@ -640,10 +641,11 @@ def broadcast_sender(port, is_for_files=False):
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while True:
             msg = getEmailFromCredentials()
-            #The third tuple element is a boolean that indicates whether or
-            #not the sender is attempting to send a file.
-            #TODO: Hash the ID's if we have time
-            s.sendto(msg.encode('ascii'), ('255.255.255.255', port), is_for_files)
+            # The third tuple element is a boolean that indicates whether or
+            # not the sender is attempting to send a file.
+            # TODO: Hash the ID's if we have time
+            s.sendto(msg.encode('ascii'),
+                     ('255.255.255.255', port), is_for_files)
             sleep(5)
     except KeyboardInterrupt:
         pass
@@ -652,13 +654,14 @@ def broadcast_sender(port, is_for_files=False):
 #        Milestone 5: Secure File Transfer               #
 ##########################################################
 
+
 def send_file(file_path):
 
-    #Convert the file in the file path to a bytes object
+    # Convert the file in the file path to a bytes object
     with open(file_path, 'rb') as f:
         contents = f.read()
-        
-        #Send it to the port via tcp_client
+
+        # Send it to the port via tcp_client
         tcp_client(9990, contents, '172.17.0.4')
 
 
@@ -717,8 +720,10 @@ def receive_file():
 #               Driver                #
 #######################################
 
+
 def sendEmail(tcp_port):
     tcp_client(tcp_port, getEmailFromCredentials())
+
 
 def killProcesses(procs):
     for p in procs:
@@ -759,11 +764,10 @@ def communication_manager():
         for p in procs:
             #print("Starting: {}".format(p.name))
             p.start()
-        
-        #while True:
+
+        # while True:
             #tcp_client(tcp_port, input(), '172.17.0.4')
-            #sleep(1)
-        
+            # sleep(1)
 
     except KeyboardInterrupt:
         for p in procs:
@@ -786,7 +790,7 @@ def main():
     else:
         # Handle target environment that doesn't support HTTPS verification
         ssl._create_default_https_context = _create_unverified_https_context
-    
+
     # credentials.txt is the file that contains user credentials
     touch("credentials.txt")
     chmod("credentials.txt", 0o600)
