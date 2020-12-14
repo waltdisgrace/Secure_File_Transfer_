@@ -142,7 +142,7 @@ def shell_list():
         print("You have no contacts.")
 
 def shell_send(file_path):
-    send_file("credentials.txt")
+    send_file(file_path)
     # Broadcast sender's ID
     '''
     broadcast_sender_worker_for_files = Process(target=broadcast_sender,
@@ -518,21 +518,20 @@ def init_ip():
     s.close()
 
 
-######################################################
-#          MILESTONE 4: LISTING CONTACTS             #
-######################################################
+###########################################################
+#          MILESTONE 5: SECURE FILE TRANSFER              #
+###########################################################
 
 class tcp_handler(BaseRequestHandler):
     def handle(self):
-        self.data = self.request.recv(1024).strip()
-        print("Echoing message from: {}".format(self.client_address[0]))
-        print(self.data)
-        '''
-        if validate_email(self.data.decode("utf-8")):
-            if isInContacts(self.data.decode("utf-8")):
-                print("")
-        '''
-        #self.request.sendall("ACK from server".encode())
+       self.data = self.request.recv(1024).strip()
+       receive_file(self.data)
+       #print("Echoing message from: {}".format(self.client_address[0]))
+       #print(self.data)
+       #if validate_email(self.data.decode("utf-8")):
+       #if isInContacts(self.data.decode("utf-8")):
+       #print("")
+       #self.request.sendall("ACK from server".encode())
 
 
 def tcp_listener(port):
@@ -589,7 +588,10 @@ def broadcast_listener(socket, q):
                 name = getNameFromEmail(email)
             # Received a send request,
             if data[0].decode().split(" ")[1] == 'True':
-                print("Contact '" + name +  "<" + email + ">' is sending a file. Accept")
+                if query_binary("Contact '" + name +  "<" + email + ">' is sending a file. Accept"):
+                    print("todo: they accepted")
+                else:
+                    print("todo: they declined")
 
     except KeyboardInterrupt:
         pass
@@ -622,7 +624,7 @@ def send_file(filename):
     BUFFER_SIZE = 4096  # send 4096 bytes each time step
 
     # * receiver IP Address and Port
-    host = HOST_IP_3
+    host = HOST_IP_2
     port = 5001
 
     # the name of file we want to send, make sure it exists
@@ -646,52 +648,30 @@ def send_file(filename):
 #######################################
 #            Receive File             #
 #######################################
-def receive_file():
+def receive_file(message):
     # device's IP address
-    SERVER_HOST = HOST_IP
-    SERVER_PORT = 5001
-    BUFFER_SIZE = 4096  # receive 4096 bytes each time
+    SERVER_HOST = HOST_IP_3
+    SERVER_PORT = 6001
+    #BUFFER_SIZE = 4096  # receive 4096 bytes each time
     SEPARATOR = "<SEPARATOR>"
 
-    # create the server socket
-    s = socket.socket()
-
-    # bind the socket to our local address
-    s.bind((SERVER_HOST, SERVER_PORT))
-
-    # enabling our server to accept connections
-    s.listen(5)
-    print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT}")
-
-    # accept connection if there is any
-    client_socket, address = s.accept()
-    # if below code is executed, that means the sender is connected
-    print(f"[+] {address} is connected.")
-
-    # receive the file infos
-    # receive using client socket, not server socket
-    received = client_socket.recv(BUFFER_SIZE).decode()
-    filename, filesize = received.split(SEPARATOR)
+    #filename, filesize, contents = received.split(SEPARATOR)
+    filename, filesize, contents = message.decode().split(SEPARATOR)
     # remove absolute path if there is
     filename = os.path.basename(filename)
     # convert to integer
     filesize = int(filesize)
-
-    # start receiving the file from the socket and writing to the file stream
-    # read 1024 bytes from the socket (receive)
-
+    #todo: don't use filesz
+    print(f"starting to write")
     # NOTE: test sending/receiving files greater than 4096 bytes large to see
     # if it works
     with open(filename, "wb") as f:
-        bytes_read = client_socket.recv(BUFFER_SIZE)
 
         # write to the file the bytes we just received
-        f.write(bytes_read)
+        f.write(contents.encode())
 
         print("File '" + filename + "' was successfully received.")
-
-    client_socket.close()
-    s.close()
+    print(f"done writing")
 
 #######################################
 #               Driver                #
@@ -731,16 +711,14 @@ def communication_manager():
                                   name="tcp_listener_worker",
                                   args=(tcp_listen,))
 
-    """
-    receive_file_worker = Process(target=receive_file,
-                                  name="receive_file_worker",
-                                  args=(,))
-    """
+#    receive_file_worker = Process(target=receive_file,
+#                                  name="receive_file_worker",)
+
     procs = [
         # broadcast_listener_worker,
         broadcast_sender_worker,
         tcp_listener_worker,
-        #receive_file_worker,
+#        receive_file_worker,
     ]
 
     try:
