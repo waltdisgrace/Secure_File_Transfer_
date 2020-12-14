@@ -97,6 +97,8 @@ def shell_help():
 def shell_add():
     name = getName()
     email = getEmail()
+    # TODO: Make sure contact is online
+    # TODO: Make sure that they have the trusted certificate
     storeData(name, email, "contacts.txt")
     print("  Contact Added.")
 
