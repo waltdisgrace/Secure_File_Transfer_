@@ -150,20 +150,38 @@ def shell_list():
 
 
 def shell_send(file_path):
-    send_file(file_path)
-    # Broadcast sender's ID
-    '''
-    broadcast_sender_worker_for_files = Process(target=broadcast_sender,
-                                                name="broadcast_sender_worker",
-                                                args=(bcast_port,True,))
-    '''
-    # Receive receiver's ID
 
-    # Establish (encrypted) TLS connection
-    # Confidentiality, integrity, authentication
+    global own_ip
+    
+    #strech: hash messages
+    broadcast_socket_for_files = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    broadcast_socket_for_files.bind(('', 5001))
+    
+    # send initial broadcast message that includes your ID (in the form of IP and port)
+    broadcast_sender_worker_for_files = Process(target=broadcast_sender_for_files,
+                                                name="broadcast_sender_worker_for_files",
+                                                args=(5001,True,))
+    broadcast_sender_worker_for_files.start()
+    
+    # receive receiver's response that includes their ID (in the form of IP and port)
+    q = Queue()
+    broadcast_listener_worker_for_files = Process(target=broadcast_listener_for_files,
+                                                name="broadcast_listener_worker_for_files",
+                                                args=(broadcast_socket_for_files,q,))
+    broadcast_listener_worker_for_files.start()
 
-    # Send the file over the encrypted connection
+    receiver_ip_addr = own_ip
+    
+    while broadcast_listener_worker_for_files.is_alive() and receiver_ip_addr != own_ip:
+        data = q.get()
+        receiver_ip_addr = data[1][0]
 
+    # Send the file over the encrypted TLS connection
+    send_file(file_path, receiver_ip_addr)
+
+    #kill processes
+    broadcast_sender_worker_for_files.terminate()
+    broadcast_listener_worker_for_files.terminate()
 
 def execute_command(command):
     """execute commands and handle piping"""
@@ -352,8 +370,10 @@ def aesEncryptFile(file_name, key):
     [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
     file_out.close()
     chmod(file_name, 0o600)
-    os.remove("contacts.txt")
-
+    if os.path.exists("contacts.txt"):#todo: we shouldn't need this
+        print("WTF")
+        os.remove("contacts.txt")
+        print("pringles")
 
 def aesDecryptFile(file_name, key):
     file_in = open(file_name, "rb")
@@ -401,14 +421,26 @@ def isInContacts(data):
     return exists
 
 
+#{'bob': {'name': 'bob', 'email': 'bob@gmail.com'}}
 def getNameFromEmail(email):
+    print("THIS IS THE ARG" + email)
     contacts = getObjs("contacts.txt")
     for x in contacts:
+        print (x)
         for y in x:
+            print(y)
+            print(x[y]["email"] + " should be email address")
             if x[y]["email"] == email:
+                print(x[y]["name"] + " should be name corresponding to email address")
                 return x[y]["name"]
-    return "MR. BEANS"
+    return "MR. BEAN"
 
+def getNameFromCredentials():
+    with open("credentials.txt") as json_file:
+        data = json.load(json_file)
+        for user in data["users"]:
+            name = user["name"]
+    return name
 
 def getEmailFromCredentials():
     with open("credentials.txt") as json_file:
@@ -589,21 +621,30 @@ def broadcast_listener(socket, q):
     try:
         while True:
             data = socket.recvfrom(512)
+            print(data)
+            q.put(data)
+
+    except KeyboardInterrupt:
+        pass
+
+def broadcast_listener_for_files(socket, q):
+    try:
+        while True:
+            data = socket.recvfrom(512)
             #print(data)
             q.put(data)
             email = data[0].decode().split(" ")[0]
-            if os.path.getsize("contacts.bin") > 0:
-                name = getNameFromEmail(email)
+            if os.path.getsize("credentials.txt") > 0:
+                name = getNameFromCredentials()
             # Received a send request,
             if data[0].decode().split(" ")[1] == 'True':
-                if query_binary("Contact '" + name +  "<" + email + ">' is sending a file. Accept"):
+                if query_binary("Contact '" + name +  " <" + email + ">' is sending a file. Accept"):
                     print("todo: they accepted")
                 else:
                     print("todo: they declined")
 
     except KeyboardInterrupt:
         pass
-
 
 def broadcast_sender(port, is_for_files=False):
     count = 0
@@ -620,20 +661,35 @@ def broadcast_sender(port, is_for_files=False):
     except KeyboardInterrupt:
         pass
 
+def broadcast_sender_for_files(port, is_for_files=False):
+    count = 0
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        while True:
+            msg = getEmailFromCredentials() + " " + str(is_for_files)
+            #The third tuple element is a boolean that indicates whether or
+            #not the sender is attempting to send a file.
+            #TODO: Hash the ID's if we have time
+            s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
+            sleep(5)
+    except KeyboardInterrupt:
+        pass
+
 ##########################################################
 #        Milestone 5: Secure File Transfer               #
 ##########################################################
 
 
 #precondition: a valid filename
-def send_file(filename):
+def send_file(filename, receiver_ip_addr):
 
     SEPARATOR = "<SEPARATOR>"
     BUFFER_SIZE = 4096  # send 4096 bytes each time step
 
     # * receiver IP Address and Port
-    host = HOST_IP_2
-    port = 5001
+    host = receiver_ip_addr
+    port = 6001
 
     # the name of file we want to send, make sure it exists
     filesize = os.path.getsize(filename)
