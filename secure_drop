@@ -56,33 +56,37 @@ def secureDropShell():
             email_valid = False
             file_path_valid = False
 
-            email = words[1]
-            file_path = words[2]
+            if len(words) != 3:
+                print("Did not provide enough arguments. Syntax: send <email> <file_path>.")
 
-            print(email)  # debug
-            print(file_path)  # debug
-
-            # Check if email is contacts
-            if os.path.getsize("contacts.bin") > 0:
-                if not isInContacts(email):
-                    print("provided email address is not in your contacts list")
-                else:
-                    email_valid = True
-                    print("email correct")  # debug
-            try:
-                if os.path.getsize(file_path) == 0:  # change criteria later?
-                    print("provided file is empty")
-                else:
-                    file_path_valid = True
-                    print("file correct")  # debug
-
-            except FileNotFoundError:
-                print("provided file path does not exist")
-
-            if email_valid and file_path_valid:
-                shell_send(file_path)
             else:
-                print("there was an error with either the email address or the file")
+                email = words[1]
+                file_path = words[2]
+                
+                print(email)  # debug
+                print(file_path)  # debug
+            
+                # Check if email is contacts
+                if os.path.getsize("contacts.bin") > 0:
+                    if not isInContacts(email):
+                        print("provided email address is not in your contacts list")
+                    else:
+                        email_valid = True
+                        print("email correct")  # debug
+                try:
+                    if os.path.getsize(file_path) == 0:  # change criteria later?
+                        print("provided file is empty")
+                    else:
+                        file_path_valid = True
+                        print("file correct")  # debug
+
+                except FileNotFoundError:
+                    print("provided file path does not exist")
+
+                if email_valid and file_path_valid:
+                    shell_send(file_path)
+                else:
+                    print("there was an error with either the email address or the file")
         else:
             execute_command(inp)
 
