@@ -22,7 +22,7 @@ from os import chmod
 
 own_ip = None
 SYMM_KEY = "stub"
-#HOST_IP_1 = "127.0.0.2"
+HOST_IP_1 = "127.0.0.2"
 HOST_IP_2 = "172.17.0.3"
 HOST_IP_3 = "172.17.0.4"
 
@@ -56,33 +56,37 @@ def secureDropShell():
             email_valid = False
             file_path_valid = False
 
-            email = words[1]
-            file_path = words[2]
+            if len(words) != 3:
+                print("Did not provide enough arguments. Syntax: send <email> <file_path>.")
 
-            print(email)  # debug
-            print(file_path)  # debug
-
-            # Check if email is contacts
-            if os.path.getsize("contacts.bin") > 0:
-                if not isInContacts(email):
-                    print("provided email address is not in your contacts list")
-                else:
-                    email_valid = True
-                    print("email correct")  # debug
-            try:
-                if os.path.getsize(file_path) == 0:  # change criteria later?
-                    print("provided file is empty")
-                else:
-                    file_path_valid = True
-                    print("file correct")  # debug
-
-            except FileNotFoundError:
-                print("provided file path does not exist")
-
-            if email_valid and file_path_valid:
-                shell_send(file_path)
             else:
-                print("there was an error with either the email address or the file")
+                email = words[1]
+                file_path = words[2]
+                
+                print(email)  # debug
+                print(file_path)  # debug
+            
+                # Check if email is contacts
+                if os.path.getsize("contacts.bin") > 0:
+                    if not isInContacts(email):
+                        print("provided email address is not in your contacts list")
+                    else:
+                        email_valid = True
+                        print("email correct")  # debug
+                try:
+                    if os.path.getsize(file_path) == 0:  # change criteria later?
+                        print("provided file is empty")
+                    else:
+                        file_path_valid = True
+                        print("file correct")  # debug
+
+                except FileNotFoundError:
+                    print("provided file path does not exist")
+
+                if email_valid and file_path_valid:
+                    shell_send(file_path)
+                else:
+                    print("there was an error with either the email address or the file")
         else:
             execute_command(inp)
 
@@ -106,13 +110,14 @@ def shell_add():
 def shell_list():
     if os.path.getsize("contacts.bin") > 0:
         broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        broadcast_socket.bind(('', 5000))
+        broadcast_socket.bind(('', 5001))
 
         q = Queue()
 
         broadcast_listener_worker = Process(target=broadcast_listener,
                                             name="broadcast_listener_worker",
                                             args=(broadcast_socket, q, ))
+
         broadcast_listener_worker.start()
         receivedEmails = []
         print("The following contacts are online:")
@@ -121,16 +126,20 @@ def shell_list():
 
         while broadcast_listener_worker.is_alive() and temp != 0:
             data = q.get()
-            email = data[0].decode("utf-8")
+            email = data[0].decode().split(" ")[0]
             ip_addr = data[1][0]
+
+            print(email)
+            name = getNameFromEmail(email)
 
             if isInContacts(email) and email not in receivedEmails:
                 receivedEmails.append(email)
-                print("* " + "<" + email + ">")
+                #print("HI")
+                #print("* " + "<" + email + ">")
+                print("* " + name + " <" + email + ">")
 
             temp = temp - 1
-            # print(temp) #debug
-
+            
         # broadcast_listener_worker.join() #TODO: do we need this?
         # print("Terminating: {}".format(broadcast_listener_worker.name)) #debug
         broadcast_listener_worker.terminate()
@@ -141,7 +150,7 @@ def shell_list():
 
 
 def shell_send(file_path):
-    send_file("credentials.txt")
+    send_file(file_path)
     # Broadcast sender's ID
     '''
     broadcast_sender_worker_for_files = Process(target=broadcast_sender,
@@ -392,6 +401,15 @@ def isInContacts(data):
     return exists
 
 
+def getNameFromEmail(email):
+    contacts = getObjs("contacts.txt")
+    for x in contacts:
+        for y in x:
+            if x[y]["email"] == email:
+                return x[y]["name"]
+    return "MR. BEANS"
+
+
 def getEmailFromCredentials():
     with open("credentials.txt") as json_file:
         data = json.load(json_file)
@@ -417,53 +435,6 @@ def getObjs(filename):
 
     aesEncryptFile("contacts.txt", SYMM_KEY)
     return objs
-
-
-def loadData(filename):
-    global SYMM_KEY
-    aesDecryptFile("contacts.bin", SYMM_KEY)
-
-    objs = []
-
-    with (open(filename, "rb")) as dbfile:
-        while True:
-            try:
-                objs.append(cPickle.load(dbfile))
-            except EOFError:
-                break
-
-    print(objs)
-    dbfile.close()
-
-    aesEncryptFile("contacts.txt", SYMM_KEY)
-
-
-def loadDataForSend(filename, email):
-    global SYMM_KEY
-    aesDecryptFile("contacts.bin", SYMM_KEY)
-
-    objs = []
-
-    with (open(filename, "rb")) as dbfile:
-        while True:
-            try:
-                objs.append(cPickle.load(dbfile))
-            except EOFError:
-                break
-
-    if email in str(objs[0]):
-        print(str(objs[0]))
-        print("it's in here")
-        return True
-    else:
-        print(str(objs[0]))
-        print("it's not in here")
-        return False
-    dbfile.close()
-
-    aesEncryptFile("contacts.txt", SYMM_KEY)
-
-    print(objs)
 
 
 def registerNewUser():
@@ -555,21 +526,20 @@ def init_ip():
     s.close()
 
 
-######################################################
-#          MILESTONE 4: LISTING CONTACTS             #
-######################################################
+###########################################################
+#          MILESTONE 5: SECURE FILE TRANSFER              #
+###########################################################
 
 class tcp_handler(BaseRequestHandler):
     def handle(self):
-        self.data = self.request.recv(1024).strip()
-        print("Echoing message from: {}".format(self.client_address[0]))
-        print(self.data)
-        '''
-        if validate_email(self.data.decode("utf-8")):
-            if isInContacts(self.data.decode("utf-8")):
-                print("")
-        '''
-        #self.request.sendall("ACK from server".encode())
+       self.data = self.request.recv(1024).strip()
+       receive_file(self.data)
+       #print("Echoing message from: {}".format(self.client_address[0]))
+       #print(self.data)
+       #if validate_email(self.data.decode("utf-8")):
+       #if isInContacts(self.data.decode("utf-8")):
+       #print("")
+       #self.request.sendall("ACK from server".encode())
 
 
 def tcp_listener(port):
@@ -619,12 +589,17 @@ def broadcast_listener(socket, q):
     try:
         while True:
             data = socket.recvfrom(512)
-            # print(data)
+            #print(data)
             q.put(data)
-
+            email = data[0].decode().split(" ")[0]
+            if os.path.getsize("contacts.bin") > 0:
+                name = getNameFromEmail(email)
             # Received a send request,
-            if data[2]:
-                print("Contact ' <>' is sending a file. Accept")
+            if data[0].decode().split(" ")[1] == 'True':
+                if query_binary("Contact '" + name +  "<" + email + ">' is sending a file. Accept"):
+                    print("todo: they accepted")
+                else:
+                    print("todo: they declined")
 
     except KeyboardInterrupt:
         pass
@@ -650,66 +625,61 @@ def broadcast_sender(port, is_for_files=False):
 ##########################################################
 
 
-def send_file(file_path):
+#precondition: a valid filename
+def send_file(filename):
 
+    SEPARATOR = "<SEPARATOR>"
+    BUFFER_SIZE = 4096  # send 4096 bytes each time step
+
+    # * receiver IP Address and Port
+    host = HOST_IP_2
+    port = 5001
+
+    # the name of file we want to send, make sure it exists
+    filesize = os.path.getsize(filename)
+
+
+    # the data contains the filename and filesize
+    data = f"{filename}{SEPARATOR}{filesize}{SEPARATOR}"
+    
     # Convert the file in the file path to a bytes object
-    with open(file_path, 'rb') as f:
+    with open(filename, 'rb') as f:
         # TODO: Maybe add buffer size as arg to read()
-        contents = f.read()
+        contents = f.read().decode()
+        data += contents
 
         # Send it to the port via tcp_client
-        tcp_client(9990, contents, '172.17.0.4')
+
+        tcp_client(9990, data.encode(), '172.17.0.4')
 
 
 #######################################
 #            Receive File             #
 #######################################
-def receive_file():
+def receive_file(message):
     # device's IP address
-    SERVER_HOST = HOST_IP
-    SERVER_PORT = 5001
-    BUFFER_SIZE = 4096  # receive 4096 bytes each time
+    SERVER_HOST = HOST_IP_3
+    SERVER_PORT = 6001
+    #BUFFER_SIZE = 4096  # receive 4096 bytes each time
     SEPARATOR = "<SEPARATOR>"
 
-    # create the server socket
-    s = socket.socket()
-
-    # bind the socket to our local address
-    s.bind((SERVER_HOST, SERVER_PORT))
-
-    # enabling our server to accept connections
-    s.listen(5)
-    print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT}")
-
-    # accept connection if there is any
-    client_socket, address = s.accept()
-    # if below code is executed, that means the sender is connected
-    print(f"[+] {address} is connected.")
-
-    # receive the file infos
-    # receive using client socket, not server socket
-    received = client_socket.recv(BUFFER_SIZE).decode()
-    filename, filesize = received.split(SEPARATOR)
+    #filename, filesize, contents = received.split(SEPARATOR)
+    filename, filesize, contents = message.decode().split(SEPARATOR)
     # remove absolute path if there is
     filename = os.path.basename(filename)
     # convert to integer
     filesize = int(filesize)
-
-    # start receiving the file from the socket and writing to the file stream
-    # read 1024 bytes from the socket (receive)
-
+    #todo: don't use filesz
+    print(f"starting to write")
     # NOTE: test sending/receiving files greater than 4096 bytes large to see
     # if it works
     with open(filename, "wb") as f:
-        bytes_read = client_socket.recv(BUFFER_SIZE)
 
         # write to the file the bytes we just received
-        f.write(bytes_read)
+        f.write(contents.encode())
 
         print("File '" + filename + "' was successfully received.")
-
-    client_socket.close()
-    s.close()
+    print(f"done writing")
 
 #######################################
 #               Driver                #
@@ -733,7 +703,7 @@ def killProcesses(procs):
 def communication_manager():
     # find own ip
     init_ip()
-    bcast_port = 5000  # if switch_ports else 1338
+    bcast_port = 5001  # if switch_ports else 1338
     tcp_listen = 9990  # if switch_ports else 9995
     tcp_port = 9990  # if switch_ports else 9990
 
@@ -749,10 +719,14 @@ def communication_manager():
                                   name="tcp_listener_worker",
                                   args=(tcp_listen,))
 
+#    receive_file_worker = Process(target=receive_file,
+#                                  name="receive_file_worker",)
+
     procs = [
         # broadcast_listener_worker,
         broadcast_sender_worker,
         tcp_listener_worker,
+#        receive_file_worker,
     ]
 
     try:
