@@ -22,16 +22,11 @@ from os import chmod
 
 own_ip = None
 SYMM_KEY = "stub"
-HOST_IP_1 = "127.0.0.2"
-HOST_IP_2 = "172.17.0.3"
-HOST_IP_3 = "172.17.0.4"
 
 # TODO:
 # - Adding
 #     - Mutual adding only
 #     - Add only if both are online & certs trusting
-# - Listing
-#     - * John Doe <john.doe@gmail.com> instead of just email
 # - Sending
 # - Certificates signed by CA
 
@@ -50,6 +45,8 @@ def secureDropShell():
             shell_add()
         elif inp == "list":
             shell_list()
+        elif inp == "send":
+            print("Did not provide enough arguments. Syntax: send <email> <file_path>.")
         elif inp[:5] == "send ":
             words = inp.split()
 
@@ -63,30 +60,24 @@ def secureDropShell():
                 email = words[1]
                 file_path = words[2]
                 
-                print(email)  # debug
-                print(file_path)  # debug
-            
                 # Check if email is contacts
                 if os.path.getsize("contacts.bin") > 0:
                     if not isInContacts(email):
-                        print("provided email address is not in your contacts list")
+                        print("The provided email address is not in your contacts list.")
                     else:
                         email_valid = True
-                        print("email correct")  # debug
                 try:
                     if os.path.getsize(file_path) == 0:  # change criteria later?
-                        print("provided file is empty")
+                        print("The provided file is empty.")
                     else:
                         file_path_valid = True
-                        print("file correct")  # debug
 
                 except FileNotFoundError:
-                    print("provided file path does not exist")
+                    print("The provided file path does not exist.")
 
                 if email_valid and file_path_valid:
-                    shell_send(file_path)
-                else:
-                    print("there was an error with either the email address or the file")
+                    shell_send(email, file_path)
+
         else:
             execute_command(inp)
 
@@ -129,59 +120,66 @@ def shell_list():
             email = data[0].decode().split(" ")[0]
             ip_addr = data[1][0]
 
-            print(email)
             name = getNameFromEmail(email)
 
             if isInContacts(email) and email not in receivedEmails:
                 receivedEmails.append(email)
-                #print("HI")
-                #print("* " + "<" + email + ">")
                 print("* " + name + " <" + email + ">")
 
             temp = temp - 1
             
         # broadcast_listener_worker.join() #TODO: do we need this?
-        # print("Terminating: {}".format(broadcast_listener_worker.name)) #debug
         broadcast_listener_worker.terminate()
-        # print("Terminated") #debug
 
     else:
         print("You have no contacts.")
 
 
-def shell_send(file_path):
+def shell_send(email, file_path):
 
     global own_ip
     
     #strech: hash messages
-    broadcast_socket_for_files = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    broadcast_socket_for_files.bind(('', 5001))
+    broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    broadcast_socket.bind(('', 5001))
     
-    # send initial broadcast message that includes your ID (in the form of IP and port)
-    broadcast_sender_worker_for_files = Process(target=broadcast_sender_for_files,
-                                                name="broadcast_sender_worker_for_files",
-                                                args=(5001,True,))
-    broadcast_sender_worker_for_files.start()
-    
+    #send initial broadcast message that includes your ID (in the form of IP and port)
+    #broadcast_sender_worker_for_files = Process(target=broadcast_sender_for_files,
+                                                #name="broadcast_sender_worker_for_files",
+                                                #args=(5001,True,))
+    #broadcast_sender_worker_for_files.start()
     # receive receiver's response that includes their ID (in the form of IP and port)
     q = Queue()
-    broadcast_listener_worker_for_files = Process(target=broadcast_listener_for_files,
-                                                name="broadcast_listener_worker_for_files",
-                                                args=(broadcast_socket_for_files,q,))
-    broadcast_listener_worker_for_files.start()
+    broadcast_listener_worker = Process(target=broadcast_listener,
+                                                name="broadcast_listener_worker",
+                                                args=(broadcast_socket,q,))
+    broadcast_listener_worker.start()
 
+    # We need the receiver's IP address in order to send them the file.
+    # We get this from the message that they broadcast to us in response to the
+    # initial broadcast we send to them above.
+    # Since all online users are broadcasting, we have to make sure that we identify
+    # the correct response broadcast.
+    # Our conditions (besides the listener process being alive) are:
+    # - The email in the received broadcast is the email of the person we're trying
+    # to send a file to.
+    # Note: The receiver email and IP address are set to our own email and IP address
+    # at first and are later replaced by the actual receiver's email and IP address.
+
+    receiver_email = getEmailFromCredentials()
     receiver_ip_addr = own_ip
-    
-    while broadcast_listener_worker_for_files.is_alive() and receiver_ip_addr != own_ip:
+
+    while broadcast_listener_worker.is_alive() and receiver_email != email:
         data = q.get()
+        receiver_email = data[0].decode().split(" ")[0]
         receiver_ip_addr = data[1][0]
 
     # Send the file over the encrypted TLS connection
     send_file(file_path, receiver_ip_addr)
 
     #kill processes
-    broadcast_sender_worker_for_files.terminate()
-    broadcast_listener_worker_for_files.terminate()
+    #broadcast_sender_worker_for_files.terminate()
+    #broadcast_listener_worker_for_files.terminate()
 
 def execute_command(command):
     """execute commands and handle piping"""
@@ -215,7 +213,7 @@ def execute_command(command):
                 try:
                     subprocess.run(cmd.strip().split())
                 except Exception:
-                    print("psh: command not found: {}".format(cmd.strip()))
+                    print("Command not found: {}. Type `help` to view valid commands.".format(cmd.strip()))
 
             # restore stdout and stdin
             os.dup2(s_in, 0)
@@ -326,10 +324,10 @@ def logIn():
                     successful = True
                     # *TODO: Enter shell
                 if not successful:
-                    print("Incorrect Credentials. Try again.")
+                    print("Email and Password Combination Invalid.")
                     successful = logIn()
     else:
-        print("There are no users registered")
+        print("There are no users registered.")
 
     return successful
 
@@ -370,10 +368,8 @@ def aesEncryptFile(file_name, key):
     [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
     file_out.close()
     chmod(file_name, 0o600)
-    if os.path.exists("contacts.txt"):#todo: we shouldn't need this
-        print("WTF")
-        os.remove("contacts.txt")
-        print("pringles")
+    os.remove("contacts.txt")
+
 
 def aesDecryptFile(file_name, key):
     file_in = open(file_name, "rb")
@@ -423,15 +419,10 @@ def isInContacts(data):
 
 #{'bob': {'name': 'bob', 'email': 'bob@gmail.com'}}
 def getNameFromEmail(email):
-    print("THIS IS THE ARG" + email)
     contacts = getObjs("contacts.txt")
     for x in contacts:
-        print (x)
         for y in x:
-            print(y)
-            print(x[y]["email"] + " should be email address")
             if x[y]["email"] == email:
-                print(x[y]["name"] + " should be name corresponding to email address")
                 return x[y]["name"]
     return "MR. BEAN"
 
@@ -498,16 +489,6 @@ def dumpRegisterToTextFile(data, file_name):
         json.dump(data, outfile)
 
 
-def printDataFile():
-    with open("credentials.txt") as json_file:
-        data = json.load(json_file)
-        for u in data["users"]:
-            print()
-            print("Name: " + u["name"])
-            print("Email: " + u["email"])
-            print("Password: " + u["password"])
-
-
 # # # # # 6. CLI # # # # #
 
 def query_binary(question, default="yes"):
@@ -566,12 +547,15 @@ class tcp_handler(BaseRequestHandler):
     def handle(self):
        self.data = self.request.recv(1024).strip()
        receive_file(self.data)
-       #print("Echoing message from: {}".format(self.client_address[0]))
-       #print(self.data)
-       #if validate_email(self.data.decode("utf-8")):
-       #if isInContacts(self.data.decode("utf-8")):
+       print("Echoing message: {}", self.data)#temp
+
+       if len(self.data.decode().split("$!%")) == 2:
+           query_msg = self.data.decode().split("$!%")[0]
+           ip_addr = self.data.decode().split("$!%")[1]
+           tcp_client(6001, str(query_binary(query_msg)).encode(), ip_addr)
+           
        #print("")
-       #self.request.sendall("ACK from server".encode())
+       self.request.sendall("ACK from server".encode())
 
 
 def tcp_listener(port):
@@ -585,13 +569,10 @@ def tcp_listener(port):
     try:
         server.serve_forever()
     except:
-        print("listener shutting down")
         server.shutdown()
 
 
 def tcp_client(port, data, target_ip):
-    # TODO: MAYBE CHANGE host_ip TO DOCKER CONTAINER IP
-    #host_ip = "127.0.0.1"
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -610,38 +591,29 @@ def tcp_client(port, data, target_ip):
     finally:
         s.close()
 
-    print("Bytes Sent:     {}".format(data))
-    print("Bytes Received: {}".format(received.decode()))
-
 
 #######################################
 #          Broadcast Example          #
 #######################################
+
 def broadcast_listener(socket, q):
-    try:
-        while True:
-            data = socket.recvfrom(512)
-            print(data)
-            q.put(data)
-
-    except KeyboardInterrupt:
-        pass
-
-def broadcast_listener_for_files(socket, q):
     try:
         while True:
             data = socket.recvfrom(512)
             #print(data)
             q.put(data)
             email = data[0].decode().split(" ")[0]
+            ip_addr = data[1][0]
+            
             if os.path.getsize("credentials.txt") > 0:
                 name = getNameFromCredentials()
+
             # Received a send request,
             if data[0].decode().split(" ")[1] == 'True':
-                #tcp_client(6001, "Contact '" + name +  " <" + email + ">' is sending a file. Accept",
+                msg = "Contact '" + name +  " <" + email + ">' is sending a file. Accept" + "$!%" + own_ip
+                tcp_client(6001, msg.encode(), ip_addr)
 
-                           #email = data[0].decode().split(" ")[0]
-                           #ip_addr = data[1][0]
+                #email = data[0].decode().split(" ")[0]
                            
                 if query_binary():
                     print("todo: they accepted")
@@ -666,21 +638,6 @@ def broadcast_sender(port, is_for_files=False):
     except KeyboardInterrupt:
         pass
 
-def broadcast_sender_for_files(port, is_for_files=False):
-    count = 0
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        while True:
-            msg = getEmailFromCredentials() + " " + str(is_for_files)
-            #The third tuple element is a boolean that indicates whether or
-            #not the sender is attempting to send a file.
-            #TODO: Hash the ID's if we have time
-            s.sendto(msg.encode('ascii'), ('255.255.255.255', port))
-            sleep(5)
-    except KeyboardInterrupt:
-        pass
-
 ##########################################################
 #        Milestone 5: Secure File Transfer               #
 ##########################################################
@@ -690,15 +647,9 @@ def broadcast_sender_for_files(port, is_for_files=False):
 def send_file(filename, receiver_ip_addr):
 
     SEPARATOR = "<SEPARATOR>"
-    BUFFER_SIZE = 4096  # send 4096 bytes each time step
-
-    # * receiver IP Address and Port
-    host = receiver_ip_addr
-    port = 6001
 
     # the name of file we want to send, make sure it exists
     filesize = os.path.getsize(filename)
-
 
     # the data contains the filename and filesize
     data = f"{filename}{SEPARATOR}{filesize}{SEPARATOR}"
@@ -711,36 +662,26 @@ def send_file(filename, receiver_ip_addr):
 
         # Send it to the port via tcp_client
 
-        tcp_client(9990, data.encode(), '172.17.0.4')
+        tcp_client(6001, data.encode(), receiver_ip_addr)
 
 
 #######################################
 #            Receive File             #
 #######################################
 def receive_file(message):
-    # device's IP address
-    SERVER_HOST = HOST_IP_3
-    SERVER_PORT = 6001
-    #BUFFER_SIZE = 4096  # receive 4096 bytes each time
     SEPARATOR = "<SEPARATOR>"
 
-    #filename, filesize, contents = received.split(SEPARATOR)
     filename, filesize, contents = message.decode().split(SEPARATOR)
-    # remove absolute path if there is
     filename = os.path.basename(filename)
-    # convert to integer
+
+    # Filesize is not actually used. TODO: Remove.
     filesize = int(filesize)
-    #todo: don't use filesz
-    print(f"starting to write")
-    # NOTE: test sending/receiving files greater than 4096 bytes large to see
-    # if it works
+    filesize += 1
+
+    # TODO: Test sending/receiving files greater than 4096 bytes large.
     with open(filename, "wb") as f:
-
-        # write to the file the bytes we just received
         f.write(contents.encode())
-
         print("File '" + filename + "' was successfully received.")
-    print(f"done writing")
 
 #######################################
 #               Driver                #
@@ -764,8 +705,8 @@ def killProcesses(procs):
 def communication_manager():
     # find own ip
     init_ip()
-    bcast_port = 5001  # if switch_ports else 1338
-    tcp_port = 6001  # if switch_ports else 9990
+    bcast_port = 5001
+    tcp_port = 6001
 
     # broadcast to other users that you exist
     #broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -779,7 +720,7 @@ def communication_manager():
                                   name="tcp_listener_worker",
                                   args=(tcp_port,))
 
-#    receive_file_worker = Process(target=receive_file,
+    #    receive_file_worker = Process(target=receive_file,
 #                                  name="receive_file_worker",)
 
     procs = [
