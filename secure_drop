@@ -638,7 +638,12 @@ def broadcast_listener_for_files(socket, q):
                 name = getNameFromCredentials()
             # Received a send request,
             if data[0].decode().split(" ")[1] == 'True':
-                if query_binary("Contact '" + name +  " <" + email + ">' is sending a file. Accept"):
+                #tcp_client(6001, "Contact '" + name +  " <" + email + ">' is sending a file. Accept",
+
+                           #email = data[0].decode().split(" ")[0]
+                           #ip_addr = data[1][0]
+                           
+                if query_binary():
                     print("todo: they accepted")
                 else:
                     print("todo: they declined")
@@ -760,8 +765,7 @@ def communication_manager():
     # find own ip
     init_ip()
     bcast_port = 5001  # if switch_ports else 1338
-    tcp_listen = 9990  # if switch_ports else 9995
-    tcp_port = 9990  # if switch_ports else 9990
+    tcp_port = 6001  # if switch_ports else 9990
 
     # broadcast to other users that you exist
     #broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -773,7 +777,7 @@ def communication_manager():
 
     tcp_listener_worker = Process(target=tcp_listener,
                                   name="tcp_listener_worker",
-                                  args=(tcp_listen,))
+                                  args=(tcp_port,))
 
 #    receive_file_worker = Process(target=receive_file,
 #                                  name="receive_file_worker",)
