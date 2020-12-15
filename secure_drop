@@ -575,7 +575,15 @@ def tcp_listener(port):
     global own_ip
     host = own_ip
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    cntx.load_cert_chain('cert.pem', 'cert.pem')
+
+    # use 'certauth' to provide mutual authentication
+    ca = CertificateAuthority('My_CA', 'cert.pem', cert_cache=50)
+    cert, key = ca.load_cert('test.server')
+
+    cntx.use_privatekey(key)
+    cntx.use_certificate(cert)
+
+    # cntx.load_cert_chain('cert.pem', 'cert.pem')
 
     server = TCPServer((host, port), tcp_handler)
     server.socket = cntx.wrap_socket(server.socket, server_side=True)
@@ -589,8 +597,16 @@ def tcp_client(port, data, target_ip):
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    cntx.load_verify_locations('cert.pem')
-    cntx.load_cert_chain('cert.pem')
+
+    # use 'certauth' to provide mutual authentication
+    ca = CertificateAuthority('My_CA', 'cert.pem', cert_cache=50)
+    cert, key = ca.load_cert('test.server')
+
+    cntx.use_privatekey(key)
+    cntx.use_certificate(cert)
+
+    # cntx.load_verify_locations('cert.pem')
+    # cntx.load_cert_chain('cert.pem')
 
     s = cntx.wrap_socket(s, server_hostname='test.server')
 
