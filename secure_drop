@@ -23,12 +23,18 @@ from os import chmod
 own_ip = None
 SYMM_KEY = "stub"
 
-# TODO:
-# - Adding
+# Adding
 #     - Mutual adding only
 #     - Add only if both are online & certs trusting
-# - Sending
-# - Certificates signed by CA
+
+# Sending
+#     - accept request (yes or no prompt in other terminal)
+
+# Attacks:
+#     - Take care of replay attacks
+
+# Minor bug: <shell> disappears after receiving files
+# Code commenting ~ 1 hour or less
 
 
 # # # # # 1. SHELL COMMANDS # # # # #
@@ -54,16 +60,18 @@ def secureDropShell():
             file_path_valid = False
 
             if len(words) != 3:
-                print("Did not provide enough arguments. Syntax: send <email> <file_path>.")
+                print(
+                    "Did not provide enough arguments. Syntax: send <email> <file_path>.")
 
             else:
                 email = words[1]
                 file_path = words[2]
-                
+
                 # Check if email is contacts
                 if os.path.getsize("contacts.bin") > 0:
                     if not isInContacts(email):
-                        print("The provided email address is not in your contacts list.")
+                        print(
+                            "The provided email address is not in your contacts list.")
                     else:
                         email_valid = True
                 try:
@@ -127,7 +135,7 @@ def shell_list():
                 print("* " + name + " <" + email + ">")
 
             temp = temp - 1
-            
+
         # broadcast_listener_worker.join() #TODO: do we need this?
         broadcast_listener_worker.terminate()
 
@@ -138,21 +146,21 @@ def shell_list():
 def shell_send(email, file_path):
 
     global own_ip
-    
-    #strech: hash messages
+
+    # strech: hash messages
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.bind(('', 5001))
-    
-    #send initial broadcast message that includes your ID (in the form of IP and port)
-    #broadcast_sender_worker_for_files = Process(target=broadcast_sender_for_files,
-                                                #name="broadcast_sender_worker_for_files",
-                                                #args=(5001,True,))
-    #broadcast_sender_worker_for_files.start()
+
+    # send initial broadcast message that includes your ID (in the form of IP and port)
+    # broadcast_sender_worker_for_files = Process(target=broadcast_sender_for_files,
+    # name="broadcast_sender_worker_for_files",
+    # args=(5001,True,))
+    # broadcast_sender_worker_for_files.start()
     # receive receiver's response that includes their ID (in the form of IP and port)
     q = Queue()
     broadcast_listener_worker = Process(target=broadcast_listener,
-                                                name="broadcast_listener_worker",
-                                                args=(broadcast_socket,q,))
+                                        name="broadcast_listener_worker",
+                                        args=(broadcast_socket, q,))
     broadcast_listener_worker.start()
 
     # We need the receiver's IP address in order to send them the file.
@@ -177,9 +185,10 @@ def shell_send(email, file_path):
     # Send the file over the encrypted TLS connection
     send_file(file_path, receiver_ip_addr)
 
-    #kill processes
-    #broadcast_sender_worker_for_files.terminate()
-    #broadcast_listener_worker_for_files.terminate()
+    # kill processes
+    # broadcast_sender_worker_for_files.terminate()
+    # broadcast_listener_worker_for_files.terminate()
+
 
 def execute_command(command):
     """execute commands and handle piping"""
@@ -213,7 +222,8 @@ def execute_command(command):
                 try:
                     subprocess.run(cmd.strip().split())
                 except Exception:
-                    print("Command not found: {}. Type `help` to view valid commands.".format(cmd.strip()))
+                    print("Command not found: {}. Type `help` to view valid commands.".format(
+                        cmd.strip()))
 
             # restore stdout and stdin
             os.dup2(s_in, 0)
@@ -426,12 +436,14 @@ def getNameFromEmail(email):
                 return x[y]["name"]
     return "MR. BEAN"
 
+
 def getNameFromCredentials():
     with open("credentials.txt") as json_file:
         data = json.load(json_file)
         for user in data["users"]:
             name = user["name"]
     return name
+
 
 def getEmailFromCredentials():
     with open("credentials.txt") as json_file:
@@ -545,17 +557,17 @@ def init_ip():
 
 class tcp_handler(BaseRequestHandler):
     def handle(self):
-       self.data = self.request.recv(1024).strip()
-       receive_file(self.data)
-       print("Echoing message: {}", self.data)#temp
+        self.data = self.request.recv(1024).strip()
+        receive_file(self.data)
+        print("Echoing message: {}", self.data)  # temp
 
-       if len(self.data.decode().split("$!%")) == 2:
-           query_msg = self.data.decode().split("$!%")[0]
-           ip_addr = self.data.decode().split("$!%")[1]
-           tcp_client(6001, str(query_binary(query_msg)).encode(), ip_addr)
-           
-       #print("")
-       self.request.sendall("ACK from server".encode())
+        if len(self.data.decode().split("$!%")) == 2:
+            query_msg = self.data.decode().split("$!%")[0]
+            ip_addr = self.data.decode().split("$!%")[1]
+            tcp_client(6001, str(query_binary(query_msg)).encode(), ip_addr)
+
+        # print("")
+        self.request.sendall("ACK from server".encode())
 
 
 def tcp_listener(port):
@@ -600,21 +612,22 @@ def broadcast_listener(socket, q):
     try:
         while True:
             data = socket.recvfrom(512)
-            #print(data)
+            # print(data)
             q.put(data)
             email = data[0].decode().split(" ")[0]
             ip_addr = data[1][0]
-            
+
             if os.path.getsize("credentials.txt") > 0:
                 name = getNameFromCredentials()
 
             # Received a send request,
             if data[0].decode().split(" ")[1] == 'True':
-                msg = "Contact '" + name +  " <" + email + ">' is sending a file. Accept" + "$!%" + own_ip
+                msg = "Contact '" + name + " <" + email + \
+                    ">' is sending a file. Accept" + "$!%" + own_ip
                 tcp_client(6001, msg.encode(), ip_addr)
 
                 #email = data[0].decode().split(" ")[0]
-                           
+
                 if query_binary():
                     print("todo: they accepted")
                 else:
@@ -622,6 +635,7 @@ def broadcast_listener(socket, q):
 
     except KeyboardInterrupt:
         pass
+
 
 def broadcast_sender(port, is_for_files=False):
     count = 0
@@ -643,7 +657,7 @@ def broadcast_sender(port, is_for_files=False):
 ##########################################################
 
 
-#precondition: a valid filename
+# precondition: a valid filename
 def send_file(filename, receiver_ip_addr):
 
     SEPARATOR = "<SEPARATOR>"
@@ -653,7 +667,7 @@ def send_file(filename, receiver_ip_addr):
 
     # the data contains the filename and filesize
     data = f"{filename}{SEPARATOR}{filesize}{SEPARATOR}"
-    
+
     # Convert the file in the file path to a bytes object
     with open(filename, 'rb') as f:
         # TODO: Maybe add buffer size as arg to read()
@@ -727,7 +741,7 @@ def communication_manager():
         # broadcast_listener_worker,
         broadcast_sender_worker,
         tcp_listener_worker,
-#        receive_file_worker,
+        #        receive_file_worker,
     ]
 
     try:
