@@ -577,13 +577,14 @@ def tcp_listener(port):
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 
     # use 'certauth' to provide mutual authentication
+
     ca = CertificateAuthority('My_CA', 'cert.pem', cert_cache=50)
-    cert, key = ca.load_cert('test.server')
+    cert, key = ca.load_cert('cert.pem')
 
-    cntx.use_privatekey(key)
-    cntx.use_certificate(cert)
-
-    # cntx.load_cert_chain('cert.pem', 'cert.pem')
+    # AttributeError: 'SSLContext' object has no attribute 'use_certificate'
+    # https://www.pyopenssl.org/en/stable/api/ssl.html#OpenSSL.SSL.Context.use_certificate
+    cntx.use_privatekey_file(cert)
+    cntx.use_certificate_file(cert)
 
     server = TCPServer((host, port), tcp_handler)
     server.socket = cntx.wrap_socket(server.socket, server_side=True)
