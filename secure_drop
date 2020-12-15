@@ -19,23 +19,16 @@ import getpass
 import subprocess
 from threading import Thread
 from os import chmod
-from certauth.certauth import main, CertificateAuthority, FileCache, LRUCache, ROOT_CA
 
 own_ip = None
 SYMM_KEY = "stub"
-
-# Adding
+#SYMM_KEY_FOR_SEND = "293809328owisj!o".encode("utf-8")
+# TODO:
+# - Adding
 #     - Mutual adding only
 #     - Add only if both are online & certs trusting
-
-# Sending
-#     - accept request (yes or no prompt in other terminal)
-
-# Attacks:
-#     - Take care of replay attacks
-
-# Minor bug: <shell> disappears after receiving files
-# Code commenting ~ 1 hour or less
+# - Sending
+# - Certificates signed by CA
 
 
 # # # # # 1. SHELL COMMANDS # # # # #
@@ -45,7 +38,8 @@ def secureDropShell():
     while True:
         inp = input("secure_drop> ")
         if inp == "exit":
-            break
+            #break
+            sys.exit()
         elif inp == "help":
             shell_help()
         elif inp == "add":
@@ -61,18 +55,16 @@ def secureDropShell():
             file_path_valid = False
 
             if len(words) != 3:
-                print(
-                    "Did not provide enough arguments. Syntax: send <email> <file_path>.")
+                print("Did not provide enough arguments. Syntax: send <email> <file_path>.")
 
             else:
                 email = words[1]
                 file_path = words[2]
-
+                
                 # Check if email is contacts
                 if os.path.getsize("contacts.bin") > 0:
                     if not isInContacts(email):
-                        print(
-                            "The provided email address is not in your contacts list.")
+                        print("The provided email address is not in your contacts list.")
                     else:
                         email_valid = True
                 try:
@@ -136,7 +128,7 @@ def shell_list():
                 print("* " + name + " <" + email + ">")
 
             temp = temp - 1
-
+            
         # broadcast_listener_worker.join() #TODO: do we need this?
         broadcast_listener_worker.terminate()
 
@@ -147,21 +139,16 @@ def shell_list():
 def shell_send(email, file_path):
 
     global own_ip
-
-    # strech: hash messages
+    
+    #strech: hash messages
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.bind(('', 5001))
-
-    # send initial broadcast message that includes your ID (in the form of IP and port)
-    # broadcast_sender_worker_for_files = Process(target=broadcast_sender_for_files,
-    # name="broadcast_sender_worker_for_files",
-    # args=(5001,True,))
-    # broadcast_sender_worker_for_files.start()
-    # receive receiver's response that includes their ID (in the form of IP and port)
+    
+    #PROTOTYPE
     q = Queue()
     broadcast_listener_worker = Process(target=broadcast_listener,
-                                        name="broadcast_listener_worker",
-                                        args=(broadcast_socket, q,))
+                                                name="broadcast_listener_worker",
+                                                args=(broadcast_socket,q,))
     broadcast_listener_worker.start()
 
     # We need the receiver's IP address in order to send them the file.
@@ -183,14 +170,28 @@ def shell_send(email, file_path):
         receiver_email = data[0].decode().split(" ")[0]
         receiver_ip_addr = data[1][0]
 
-    # Send the file over the encrypted TLS connection
+    if os.path.getsize("credentials.txt") > 0:
+        name = getNameFromCredentials()
+
+    #PROTOTYPE
+    #msg = "Contact '" + name +  " <" + email + ">' is sending a file. Accept" + "$!%" + own_ip
+    #tcp_client(6001, msg.encode(), receiver_ip_addr)
+
     send_file(file_path, receiver_ip_addr)
 
-    # kill processes
-    # broadcast_sender_worker_for_files.terminate()
-    # broadcast_listener_worker_for_files.terminate()
+    #PROTOTYPE
+    #data = q.get()
+    #if data == 'y':
+        # Send the file over the encrypted TLS connection
+        #send_file(file_path, receiver_ip_addr)
+    #else:
+        #print("Transfer offer declined.")
 
+    #kill processes
+    #broadcast_sender_worker_for_files.terminate()
+    #broadcast_listener_worker_for_files.terminate()
 
+# Executes secureDropShell commands
 def execute_command(command):
     """execute commands and handle piping"""
     try:
@@ -223,8 +224,7 @@ def execute_command(command):
                 try:
                     subprocess.run(cmd.strip().split())
                 except Exception:
-                    print("Command not found: {}. Type `help` to view valid commands.".format(
-                        cmd.strip()))
+                    print("Command not found: {}. Type `help` to view valid commands.".format(cmd.strip()))
 
             # restore stdout and stdin
             os.dup2(s_in, 0)
@@ -342,7 +342,6 @@ def logIn():
 
     return successful
 
-
 def storeUserInfo(name, email, password):
     """
     returns the dict of dict that constitutes the user info
@@ -379,7 +378,8 @@ def aesEncryptFile(file_name, key):
     [file_out.write(x) for x in (cipher.nonce, tag, ciphertext)]
     file_out.close()
     chmod(file_name, 0o600)
-    os.remove("contacts.txt")
+    if os.path.exists("contacts.txt"):
+        os.remove("contacts.txt")
 
 
 def aesDecryptFile(file_name, key):
@@ -395,7 +395,7 @@ def aesDecryptFile(file_name, key):
 
 # # # # # 4. Database # # # # #
 
-
+# Stores and encrypts contact data in contacts.bin
 def storeData(name, email, filename):
     global SYMM_KEY
     if os.path.getsize("contacts.bin") > 0:
@@ -427,8 +427,7 @@ def isInContacts(data):
                 exists = True
     return exists
 
-
-#{'bob': {'name': 'bob', 'email': 'bob@gmail.com'}}
+# When given an email, this function gets the email owner's name from contacts file
 def getNameFromEmail(email):
     contacts = getObjs("contacts.txt")
     for x in contacts:
@@ -437,7 +436,7 @@ def getNameFromEmail(email):
                 return x[y]["name"]
     return "MR. BEAN"
 
-
+# Return name of currently registered user
 def getNameFromCredentials():
     with open("credentials.txt") as json_file:
         data = json.load(json_file)
@@ -445,7 +444,7 @@ def getNameFromCredentials():
             name = user["name"]
     return name
 
-
+# Return email of currently registered email
 def getEmailFromCredentials():
     with open("credentials.txt") as json_file:
         data = json.load(json_file)
@@ -453,7 +452,7 @@ def getEmailFromCredentials():
             email = user["email"]
     return email
 
-
+# Returns a list containing user contacts
 def getObjs(filename):
     global SYMM_KEY
     aesDecryptFile("contacts.bin", SYMM_KEY)
@@ -488,15 +487,7 @@ def registerNewUser():
     dumpRegisterToTextFile(storeUserInfo(
         name, email, password), "credentials.txt")
 
-
-def dumpUserToTextFile(data, file_name):
-    """
-    data is a dict of dict
-    """
-    with open(file_name, "w") as outfile:
-        cPickle.dump(data, outfile)
-
-
+# Writes user credentials to text file after registration
 def dumpRegisterToTextFile(data, file_name):
     with open(file_name, "w") as outfile:
         json.dump(data, outfile)
@@ -524,7 +515,6 @@ def query_binary(question, default="yes"):
         prompt = " (y/N)? "
     else:
         raise ValueError("invalid default answer: '%s'" % default)
-
     while True:
         print(question + prompt)
         choice = input().lower()
@@ -543,7 +533,7 @@ def touch(fname):
     else:
         open(fname, 'a').close()
 
-
+# Sets global own_ip to current user's IP address
 def init_ip():
     global own_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -558,62 +548,59 @@ def init_ip():
 
 class tcp_handler(BaseRequestHandler):
     def handle(self):
-        self.data = self.request.recv(1024).strip()
-        receive_file(self.data)
-        print("Echoing message: {}", self.data)  # temp
+       self.data = self.request.recv(1024).strip()
+       #print(self.data)
+       receive_file(self.data)
+       #self.data = self.request.recv(1024).strip()
 
-        if len(self.data.decode().split("$!%")) == 2:
-            query_msg = self.data.decode().split("$!%")[0]
-            ip_addr = self.data.decode().split("$!%")[1]
-            tcp_client(6001, str(query_binary(query_msg)).encode(), ip_addr)
+       #q = Queue()
 
-        # print("")
-        self.request.sendall("ACK from server".encode())
+       #print("Echoing message: {}", self.data)#temp
+
+       # Receiving a transfer offer.
+       #if len(self.data.decode().split("$!%")) == 2:
+           #query_msg = self.data.decode().split("$!%")[0]
+           #ip_addr = self.data.decode().split("$!%")[1]
+           #response = query_binary(query_msg)
+           #tcp_client(6001, str(response).encode(), ip_addr)
+       #else:
+
+           # Receiving a "yes" answer to a transfer offer.
+           #if self.data == 'y' or self.data == 'n':
+               #q.put(self.data)
+               #if self.data == 'y':
+                   #Receive a file.
+                   #receive_file(self.data)
+               
+       #self.request.sendall("ACK from server".encode())
 
 
 def tcp_listener(port):
     global own_ip
     host = own_ip
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-
-    # use 'certauth' to provide mutual authentication
-
-    ca = CertificateAuthority('My_CA', 'cert.pem', cert_cache=50)
-    cert, key = ca.load_cert('cert.pem')
-
-    # AttributeError: 'SSLContext' object has no attribute 'use_certificate'
-    # https://www.pyopenssl.org/en/stable/api/ssl.html#OpenSSL.SSL.Context.use_certificate
-    cntx.use_privatekey_file(cert)
-    cntx.use_certificate_file(cert)
+    cntx.load_cert_chain('cert.pem', 'cert.pem')
 
     server = TCPServer((host, port), tcp_handler)
     server.socket = cntx.wrap_socket(server.socket, server_side=True)
+
     try:
         server.serve_forever()
     except:
         server.shutdown()
 
-
+# Sends data to specified port/ip
 def tcp_client(port, data, target_ip):
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-
-    # use 'certauth' to provide mutual authentication
-    ca = CertificateAuthority('My_CA', 'cert.pem', cert_cache=50)
-    cert, key = ca.load_cert('test.server')
-
-    cntx.use_privatekey(key)
-    cntx.use_certificate(cert)
-
-    # cntx.load_verify_locations('cert.pem')
-    # cntx.load_cert_chain('cert.pem')
+    cntx.load_verify_locations('cert.pem')
+    cntx.load_cert_chain('cert.pem')
 
     s = cntx.wrap_socket(s, server_hostname='test.server')
 
     try:
         # Establish connection to TCP server and exchange data
-        # TODO: FIX ERROR RELATED TO THE FOLLOWING LINE
         s.connect((target_ip, port))
         s.sendall(data)
         # Read data from the TCP server and close the connection
@@ -630,30 +617,13 @@ def broadcast_listener(socket, q):
     try:
         while True:
             data = socket.recvfrom(512)
-            # print(data)
+            #print(data)
             q.put(data)
             email = data[0].decode().split(" ")[0]
             ip_addr = data[1][0]
-
-            if os.path.getsize("credentials.txt") > 0:
-                name = getNameFromCredentials()
-
-            # Received a send request,
-            if data[0].decode().split(" ")[1] == 'True':
-                msg = "Contact '" + name + " <" + email + \
-                    ">' is sending a file. Accept" + "$!%" + own_ip
-                tcp_client(6001, msg.encode(), ip_addr)
-
-                #email = data[0].decode().split(" ")[0]
-
-                if query_binary():
-                    print("todo: they accepted")
-                else:
-                    print("todo: they declined")
-
+            
     except KeyboardInterrupt:
         pass
-
 
 def broadcast_sender(port, is_for_files=False):
     count = 0
@@ -675,16 +645,23 @@ def broadcast_sender(port, is_for_files=False):
 ##########################################################
 
 
-# precondition: a valid filename
+#precondition: a valid filename
 def send_file(filename, receiver_ip_addr):
 
+    #global SYMM_KEY_FOR_SEND
+    
     SEPARATOR = "<SEPARATOR>"
 
+    #data = aesEncryptFile(filename, SYMM_KEY_FOR_SEND)
+    
     # the name of file we want to send, make sure it exists
     filesize = os.path.getsize(filename)
 
     # the data contains the filename and filesize
     data = f"{filename}{SEPARATOR}{filesize}{SEPARATOR}"
+
+    #filename = filename.replace(".txt", "")
+    #filename += ".bin"
 
     # Convert the file in the file path to a bytes object
     with open(filename, 'rb') as f:
@@ -693,47 +670,27 @@ def send_file(filename, receiver_ip_addr):
         data += contents
 
         # Send it to the port via tcp_client
-
         tcp_client(6001, data.encode(), receiver_ip_addr)
-
 
 #######################################
 #            Receive File             #
 #######################################
 def receive_file(message):
+    #global SYMM_KEY_FOR_SEND
     SEPARATOR = "<SEPARATOR>"
 
     filename, filesize, contents = message.decode().split(SEPARATOR)
     filename = os.path.basename(filename)
 
-    # Filesize is not actually used. TODO: Remove.
-    filesize = int(filesize)
-    filesize += 1
-
-    # TODO: Test sending/receiving files greater than 4096 bytes large.
     with open(filename, "wb") as f:
         f.write(contents.encode())
+        
         print("File '" + filename + "' was successfully received.")
 
-#######################################
-#               Driver                #
-#######################################
+    #decrypt file
+    #aesDecyptFile(filename, SYMM_KEY_FOR_SEND)
 
-
-def sendEmail(tcp_port):
-    tcp_client(tcp_port, getEmailFromCredentials())
-
-
-def killProcesses(procs):
-    for p in procs:
-        print("Terminating: {}".format(p.name))
-        if p.is_alive():
-            p.terminate()
-            sleep(0.1)
-        if not p.is_alive():
-            p.join()
-
-
+# Initiates broadcast sender worker and tcp listener worker
 def communication_manager():
     # find own ip
     init_ip()
@@ -759,7 +716,7 @@ def communication_manager():
         # broadcast_listener_worker,
         broadcast_sender_worker,
         tcp_listener_worker,
-        #        receive_file_worker,
+#        receive_file_worker,
     ]
 
     try:
@@ -825,6 +782,7 @@ def main():
             # th_secureDropShell.start()
             th_secureDropShell = Thread(target=secureDropShell)
             th_secureDropShell.start()
+            th_secureDropShell.join()
 
 
 if __name__ == "__main__":
