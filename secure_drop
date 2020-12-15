@@ -19,6 +19,7 @@ import getpass
 import subprocess
 from threading import Thread
 from os import chmod
+from certauth.certauth import main, CertificateAuthority, FileCache, LRUCache, ROOT_CA
 
 own_ip = None
 SYMM_KEY = "stub"
